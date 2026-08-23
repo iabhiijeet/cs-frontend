@@ -1,4 +1,15 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+/**
+ * Backend API base URL. Required in every environment — there is deliberately
+ * NO hardcoded default so a missing NEXT_PUBLIC_API_URL fails loudly at
+ * request time instead of silently targeting localhost in production.
+ */
+function apiUrl(): string {
+  const url = process.env.NEXT_PUBLIC_API_URL;
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_API_URL is not configured");
+  }
+  return url;
+}
 
 /**
  * Thrown when a request cannot be formed correctly because the frontend
@@ -33,7 +44,7 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch(`${apiUrl()}${endpoint}`, {
     ...options,
     headers,
   });
@@ -156,7 +167,7 @@ export async function getReviewActivities() {
 export async function downloadImportTemplate() {
   const { uId } = requireContext();
   // Return URL so user can open in new tab
-  return `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/activity-data/import/template?universityId=${uId}`;
+  return `${apiUrl()}/activity-data/import/template?universityId=${uId}`;
 }
 
 export async function previewImport(file: File) {
@@ -170,7 +181,7 @@ export async function previewImport(file: File) {
   const headers = new Headers();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/activity-data/import/preview`, {
+  const res = await fetch(`${apiUrl()}/activity-data/import/preview`, {
     method: "POST",
     headers,
     body: formData,
@@ -203,7 +214,7 @@ export async function uploadDocument(file: File, documentType: string) {
   const headers = new Headers();
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/documents/upload`, {
+  const res = await fetch(`${apiUrl()}/documents/upload`, {
     method: "POST",
     headers,
     body: formData,
