@@ -522,7 +522,12 @@ export async function login(email: string, password: string): Promise<AuthRespon
   });
 }
 
-export async function register(payload: { username: string; email: string; password: string }): Promise<AuthResponse> {
+export async function register(payload: {
+  username: string;
+  email: string;
+  password: string;
+  organisationName: string;
+}): Promise<AuthResponse> {
   return fetchAPI(`/auth/register`, {
     method: "POST",
     body: JSON.stringify(payload),

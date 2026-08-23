@@ -46,7 +46,18 @@ export function useReportingPeriod(): ReportingPeriodState {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated || !organisationId) {
-      setState((s) => ({ ...s, status: "idle", activePeriodId: null }));
+      // Authenticated but with no organisation: a broken session that must
+      // terminate in an explicit error, never a silent idle (which useDashboard
+      // treats as loading forever). Logged-out remains "idle" for ProtectedRoute.
+      const authBroken = isAuthenticated && !organisationId;
+      setState((s) => ({
+        ...s,
+        status: authBroken ? "error" : "idle",
+        activePeriodId: null,
+        error: authBroken
+          ? "Your session is missing its organisation — sign in again to initialize it."
+          : s.error,
+      }));
       return;
     }
     const orgId: string = organisationId;
