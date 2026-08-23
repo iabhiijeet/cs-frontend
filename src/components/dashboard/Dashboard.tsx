@@ -10,6 +10,7 @@ import Footprint from "@/components/dashboard/views/Footprint";
 import Category from "@/components/dashboard/views/Category";
 import Scope from "@/components/dashboard/views/Scope";
 import Placeholder from "@/components/dashboard/views/Placeholder";
+import ReportsView from "@/components/dashboard/views/ReportsView";
 import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
 import { EASE } from "@/lib/animations";
 import type { TabId } from "@/components/dashboard/Sidebar";
@@ -47,7 +48,7 @@ function DashboardContent() {
   
   // Auto-login utility removed for production
 
-  const { data, loading, error } = useDashboardContext();
+  const { data, loading, error, fallbackUsed } = useDashboardContext();
 
   const meta = TITLES[tab];
 
@@ -87,6 +88,11 @@ function DashboardContent() {
 
         <main className="flex-1 px-[20px] py-[24px] md:px-[32px]">
           <div className="mx-auto flex max-w-[1240px] flex-col">
+            {fallbackUsed && (
+              <div className="mb-[12px] flex items-center gap-[8px] rounded-[8px] border border-orange-200 bg-orange-50 px-[12px] py-[8px] text-[12px] font-medium text-orange-800">
+                Showing demo data — live backend data is currently unavailable{error ? ` (${error})` : ""}.
+              </div>
+            )}
             <DashboardFilterBar />
 
             {(!data || (data.TOTAL_12M === 0 && data.ACTIVITY_STATS.total === 0)) ? (
@@ -114,7 +120,8 @@ function DashboardContent() {
                   {tab === "scope1" && <Scope scope={"scope1" as ScopeDetail["key"]} />}
                   {tab === "scope2" && <Scope scope={"scope2" as ScopeDetail["key"]} />}
                   {tab === "scope3" && <Scope scope={"scope3" as ScopeDetail["key"]} />}
-                  {(tab === "reports" || tab === "settings") && <Placeholder tab={tab} />}
+                  {(tab === "reports") && <ReportsView />}
+                  {tab === "settings" && <Placeholder tab={tab} />}
                 </motion.div>
               </AnimatePresence>
             )}

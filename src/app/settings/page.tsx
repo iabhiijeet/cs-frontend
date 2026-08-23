@@ -6,21 +6,28 @@ import { EASE } from "@/lib/animations";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
-import { getCampuses, getBuildings, getFloors, getAssets } from "@/lib/api";
+import { getCampuses, getBuildings, getFloors, getAssets, getUniversity, updateUniversity } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { MapPin, Buildings, Steps, Engine, BuildingOffice } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 type SettingsTab = "organization" | "campuses" | "buildings" | "floors" | "assets";
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>("organization");
-  
+
   const [loading, setLoading] = useState(false);
   const [campuses, setCampuses] = useState<any[]>([]);
   const [buildings, setBuildings] = useState<any[]>([]);
   const [floors, setFloors] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
+
+  // Organization profile (API-backed)
+  const [uniLoading, setUniLoading] = useState(false);
+  const [savingUni, setSavingUni] = useState(false);
+  const [uniForm, setUniForm] = useState({ name: "", code: "", country: "" });
 
   const fetchTabDetails = async (tab: SettingsTab) => {
     setLoading(true);
@@ -48,6 +55,56 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchTabDetails(activeTab);
   }, [activeTab]);
+
+  // Load the university profile from the V2 backend when available.
+  const loadUniversity = async () => {
+    const uId = user?.universityId;
+    if (!uId) return;
+    setUniLoading(true);
+    try {
+      const res = await getUniversity(uId);
+      if (res.success && res.data) {
+        setUniForm({
+          name: res.data.name || "",
+          code: res.data.code || "",
+          country: res.data.country || "",
+        });
+      } else {
+        toast.error(res.message || "Failed to load organization profile");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to load organization profile");
+    } finally {
+      setUniLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUniversity();
+     
+  }, [user?.universityId]);
+
+  const handleSaveUniversity = async () => {
+    const uId = user?.universityId;
+    if (!uId) return;
+    setSavingUni(true);
+    try {
+      const payload: Record<string, string> = {};
+      if (uniForm.name) payload.name = uniForm.name;
+      if (uniForm.country) payload.country = uniForm.country;
+      const res = await updateUniversity(uId, payload);
+      if (res.success) {
+        toast.success(res.message || "Organization updated successfully");
+        await loadUniversity();
+      } else {
+        toast.error(res.message || "Failed to update organization");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update organization");
+    } finally {
+      setSavingUni(false);
+    }
+  };
 
   const TABS = [
     { id: "organization", label: "Organization", icon: BuildingOffice },
@@ -106,27 +163,50 @@ export default function SettingsPage() {
                 {activeTab === "organization" && (
                   <div className="rounded-[12px] border border-black/[0.08] bg-white p-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
                     <h3 className="text-[16px] font-semibold text-black mb-[16px]">University Profile</h3>
-                    <div className="grid grid-cols-2 gap-[16px]">
-                      <div className="flex flex-col gap-[6px]">
-                        <label className="text-[12px] font-semibold text-[#52525b]">Organization Name</label>
-                        <input type="text" defaultValue="Demo University" className="h-[36px] w-full rounded-[8px] border border-black/[0.08] px-[12px] text-[13px]" />
-                      </div>
-                      <div className="flex flex-col gap-[6px]">
-                        <label className="text-[12px] font-semibold text-[#52525b]">Industry Sector</label>
-                        <input type="text" defaultValue="Higher Education" className="h-[36px] w-full rounded-[8px] border border-black/[0.08] px-[12px] text-[13px]" />
-                      </div>
-                      <div className="flex flex-col gap-[6px] col-span-2">
-                        <label className="text-[12px] font-semibold text-[#52525b]">Base Currency</label>
-                        <select className="h-[36px] w-full rounded-[8px] border border-black/[0.08] px-[12px] text-[13px]">
-                          <option>USD ($)</option>
-                          <option>INR (₹)</option>
-                          <option>EUR (€)</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="mt-[24px] flex justify-end">
-                      <button className="rounded-[8px] bg-[#16a34a] px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-[#15803d]">Save Changes</button>
-                    </div>
+                    {uniLoading ? (
+                      <div className="py-[24px] text-center text-[13px] text-[#71717a]">Loading organization profile…</div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-[16px]">
+                          <div className="flex flex-col gap-[6px]">
+                            <label className="text-[12px] font-semibold text-[#52525b]">Organization Name</label>
+                            <input
+                              type="text"
+                              value={uniForm.name}
+                              onChange={(e) => setUniForm({ ...uniForm, name: e.target.value })}
+                              className="h-[36px] w-full rounded-[8px] border border-black/[0.08] px-[12px] text-[13px]"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-[6px]">
+                            <label className="text-[12px] font-semibold text-[#52525b]">Organization Code</label>
+                            <input
+                              type="text"
+                              value={uniForm.code}
+                              disabled
+                              className="h-[36px] w-full rounded-[8px] border border-black/[0.08] bg-black/[0.03] px-[12px] text-[13px]"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-[6px] col-span-2">
+                            <label className="text-[12px] font-semibold text-[#52525b]">Country</label>
+                            <input
+                              type="text"
+                              value={uniForm.country}
+                              onChange={(e) => setUniForm({ ...uniForm, country: e.target.value })}
+                              className="h-[36px] w-full rounded-[8px] border border-black/[0.08] px-[12px] text-[13px]"
+                            />
+                          </div>
+                        </div>
+                        <div className="mt-[24px] flex justify-end">
+                          <button
+                            onClick={handleSaveUniversity}
+                            disabled={savingUni || !user?.universityId}
+                            className="rounded-[8px] bg-[#16a34a] px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-[#15803d] disabled:opacity-50"
+                          >
+                            {savingUni ? "Saving…" : "Save Changes"}
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 

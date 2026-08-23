@@ -21,7 +21,7 @@ export default function ImportPage() {
   // Preview State
   const [previewData, setPreviewData] = useState<any[]>([]);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
-  const [importJobId, setImportJobId] = useState<string>("");
+  const [jobId, setJobId] = useState<string>("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -45,7 +45,8 @@ export default function ImportPage() {
       if (res.success) {
         setPreviewData(res.data.validRows || []);
         setValidationErrors(res.data.invalidRows || []);
-        setImportJobId(res.data.importJobId);
+        // V2 preview returns data.jobId (NOT importJobId)
+        setJobId(res.data.jobId);
         setStep("PREVIEW");
       } else {
         toast.error(res.message || "Failed to preview file");
@@ -68,9 +69,10 @@ export default function ImportPage() {
     
     try {
       setLoading(true);
-      const res = await confirmImport(importJobId, previewData);
+      const res = await confirmImport(jobId, previewData);
       if (res.success) {
-        toast.success(`Successfully imported ${res.data.importedCount || previewData.length} activities.`);
+        // V2 puts importedRows at the TOP LEVEL of the confirm response.
+        toast.success(`Successfully imported ${res.importedRows ?? 0} activities.`);
         window.location.href = "/activity-data";
       } else {
         toast.error(res.message || "Import failed");

@@ -6,10 +6,10 @@ import { useDashboard } from "./useDashboard";
 const DashboardContext = createContext<any>(null);
 
 export function DashboardProvider({ children }: { children: ReactNode }) {
-  const { data, loading, error, filters, setFilters } = useDashboard();
+  const { data, loading, error, fallbackUsed, periods, filters, setFilters } = useDashboard();
 
   return (
-    <DashboardContext.Provider value={{ data, loading, error, filters, setFilters }}>
+    <DashboardContext.Provider value={{ data, loading, error, fallbackUsed, periods, filters, setFilters }}>
       {children}
     </DashboardContext.Provider>
   );

@@ -60,8 +60,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedToken = localStorage.getItem("token");
       const storedUserJson = localStorage.getItem("user");
       if (storedToken && storedUserJson) {
+        const parsedUser = JSON.parse(storedUserJson) as BackendUser;
         setToken(storedToken);
-        setBackendUser(JSON.parse(storedUserJson) as BackendUser);
+        setBackendUser(parsedUser);
+        if (parsedUser.organisationId) {
+          localStorage.setItem("universityId", parsedUser.organisationId);
+        }
       }
     } catch {
       // Corrupt storage: treat as logged out.
@@ -72,6 +76,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const setAuth = useCallback((newToken: string, newBackendUser: BackendUser) => {
     localStorage.setItem("token", newToken);
     localStorage.setItem("user", JSON.stringify(newBackendUser));
+    // universityId is derived strictly from the authenticated organisation.
+    if (newBackendUser.organisationId) {
+      localStorage.setItem("universityId", newBackendUser.organisationId);
+    } else {
+      localStorage.removeItem("universityId");
+    }
+    // A previous session's reporting period must never leak into a new org.
+    localStorage.removeItem("reportingPeriodId");
     setToken(newToken);
     setBackendUser(newBackendUser);
   }, []);
@@ -79,6 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("universityId");
+    localStorage.removeItem("reportingPeriodId");
     setToken(null);
     setBackendUser(null);
     router.push("/auth/signin");

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ArrowDownRight, ArrowUpRight, ChartBar, ChartPieSlice, Database, Stack } from "@phosphor-icons/react";
+import { ArrowDownRight, ArrowUpRight, ChartBar, ChartPieSlice, Stack } from "@phosphor-icons/react";
 import Section from "@/components/dashboard/Section";
 import CountUp from "@/components/dashboard/CountUp";
 import BarList from "@/components/dashboard/BarList";
@@ -11,7 +11,7 @@ import { EASE } from "@/lib/animations";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
 
 export default function Category() {
-  const { data: { CATEGORIES, TOTAL_12M } } = useDashboardContext();
+  const { data: { CATEGORIES, TOTAL_12M, KPIS } } = useDashboardContext();
 
   const SCOPE_FROM_CATEGORIES = (() => {
     const s1 = CATEGORIES.filter((c: any) => c.scope === "S1").reduce((a: number, c: any) => a + c.value, 0);
@@ -30,7 +30,7 @@ export default function Category() {
       label: "Total footprint",
       value: TOTAL_12M,
       suffix: " tCO₂e",
-      delta: -12.4,
+      delta: KPIS[0]?.delta ?? 0,
       good: true,
       Icon: Stack,
     },
@@ -38,7 +38,7 @@ export default function Category() {
       label: "Scope 3 share",
       value: Math.round(SCOPE_FROM_CATEGORIES[2].share * 100),
       suffix: "%",
-      delta: 0.6,
+      delta: 0,
       good: false,
       Icon: ChartPieSlice,
     },
@@ -50,15 +50,6 @@ export default function Category() {
       good: CATEGORIES[0] ? CATEGORIES[0].trend < 0 : false,
       Icon: ChartBar,
       caption: CATEGORIES[0] ? CATEGORIES[0].name : "None",
-    },
-    {
-      label: "Data sources",
-      value: 512,
-      suffix: "",
-      delta: 8.2,
-      good: true,
-      Icon: Database,
-      caption: "synced automatically",
     },
   ];
 
@@ -145,8 +136,8 @@ export default function Category() {
         }
       >
         <VerticalBars
-          data={CATEGORIES.map((c: any, i: number) => ({
-            label: ["Goods & services", "Electricity", "Other S3", "Business travel", "Transport", "On-site fuel", "Heating"][i] || c.name,
+          data={CATEGORIES.map((c: any) => ({
+            label: c.name,
             value: c.value,
             color: c.scope === "S1" ? "#15803d" : c.scope === "S2" ? "#22c55e" : "#86efac",
           }))}

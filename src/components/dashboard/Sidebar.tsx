@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
+import { getUniversity } from "@/lib/api";
 import {
   ArrowUpRight,
-  CaretDown,
   ChartBar,
   FileText,
   Flame,
@@ -79,7 +79,7 @@ const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
   },
 ];
 
-const WORKSPACES = ["Carbonsynq Inc.", "Acme Corp", "Northwind Ltd"];
+const WORKSPACE_FALLBACK = "Workspace";
 
 interface NavItemProps {
   entry: NavEntry;
@@ -125,8 +125,28 @@ interface SidebarProps {
 
 export default function Sidebar({ open, onClose, active, onChange }: SidebarProps) {
   const { user, logout } = useAuth();
-  const [workspace, setWorkspace] = useState(0);
-  const [wsOpen, setWsOpen] = useState(false);
+  const [orgName, setOrgName] = useState(WORKSPACE_FALLBACK);
+
+  // Real organisation name from the V2 backend; falls back to a neutral label.
+  useEffect(() => {
+    let cancelled = false;
+    const uId = user?.universityId;
+    if (!uId) {
+      setOrgName(WORKSPACE_FALLBACK);
+      return;
+    }
+    getUniversity(uId)
+      .then((res) => {
+        if (cancelled) return;
+        if (res.success && res.data?.name) setOrgName(res.data.name);
+      })
+      .catch(() => {
+        if (!cancelled) setOrgName(WORKSPACE_FALLBACK);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.universityId]);
 
   const content = (
     <div className="flex h-full w-[252px] flex-col border-r border-black/[0.06] bg-white">
@@ -141,45 +161,13 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
       </div>
 
       <div className="px-[12px]">
-        <div className="relative">
-          <button
-            onClick={() => setWsOpen((v) => !v)}
-            className="flex w-full items-center justify-between rounded-[8px] border border-black/[0.06] bg-[#fafafa] px-[10px] py-[8px] text-left transition-colors hover:border-black/10"
-          >
-            <div className="flex items-center gap-[8px]">
-              <span className="flex h-[22px] w-[22px] items-center justify-center rounded-[6px] bg-[#16a34a] text-[10px] font-bold text-white">
-                {WORKSPACES[workspace].slice(0, 1)}
-              </span>
-              <span className="text-[13px] font-medium text-black">{WORKSPACES[workspace]}</span>
-            </div>
-            <CaretDown size={12} className="text-[#a1a1aa]" />
-          </button>
-          <AnimatePresence>
-            {wsOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -4, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -4, scale: 0.98 }}
-                transition={{ duration: 0.15, ease: EASE }}
-                className="absolute inset-x-[10px] top-full z-20 mt-[6px] rounded-[8px] border border-black/[0.06] bg-white p-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
-              >
-                {WORKSPACES.map((w, i) => (
-                  <button
-                    key={w}
-                    onClick={() => {
-                      setWorkspace(i);
-                      setWsOpen(false);
-                    }}
-                    className={`w-full rounded-[6px] px-[8px] py-[7px] text-left text-[13px] font-medium transition-colors hover:bg-black/[0.04] ${
-                      i === workspace ? "text-black" : "text-[#71717a]"
-                    }`}
-                  >
-                    {w}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
+        <div className="flex items-center gap-[8px] rounded-[8px] border border-black/[0.06] bg-[#fafafa] px-[10px] py-[8px]">
+          <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-[#16a34a] text-[10px] font-bold text-white">
+            {orgName.slice(0, 1)}
+          </span>
+          <span className="truncate text-[13px] font-medium text-black" title={orgName}>
+            {orgName}
+          </span>
         </div>
       </div>
 

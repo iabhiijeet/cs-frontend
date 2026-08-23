@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
-import { getDashboardSummary } from '../lib/api';
+import { getDashboardSummary, ContextError } from '../lib/api';
+import { useReportingPeriod } from './useReportingPeriod';
 import * as demoData from '../lib/demo-data';
 
 export function useDashboard() {
+  const {
+    periods,
+    activePeriodId,
+    status: periodStatus,
+    error: periodError,
+  } = useReportingPeriod();
+
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [fallbackUsed, setFallbackUsed] = useState(false);
 
   const [filters, setFilters] = useState({
     reportingPeriodId: "",
@@ -17,30 +26,80 @@ export function useDashboard() {
   });
 
   useEffect(() => {
+    // Wait for the foundation (auth + reporting period) before any request.
+    if (periodStatus === "idle" || periodStatus === "resolving") {
+      setLoading(true);
+      return;
+    }
+
+    if (periodStatus === "empty") {
+      // No reporting periods exist for this university — a real empty state,
+      // never an invented period id.
+      setData(null);
+      setError(null);
+      setFallbackUsed(false);
+      setLoading(false);
+      return;
+    }
+
+    if (periodStatus === "error") {
+      setData(null);
+      setError(periodError);
+      setFallbackUsed(false);
+      setLoading(false);
+      return;
+    }
+
+    const effectivePeriodId = filters.reportingPeriodId || activePeriodId || "";
+    if (!effectivePeriodId) {
+      setData(null);
+      setError("No reporting period is selected.");
+      setFallbackUsed(false);
+      setLoading(false);
+      return;
+    }
+
     async function fetchData() {
       try {
         setLoading(true);
-        // Pass reportingPeriodId to the API
-        const response = await getDashboardSummary(undefined, filters.reportingPeriodId || undefined);
-        
-        if (response.success) {
+        setError(null);
+        const response = await getDashboardSummary(undefined, effectivePeriodId);
+
+        if (response.success && response.data) {
           setData(mapBackendToFrontend(response.data));
+          setFallbackUsed(false);
         } else {
-          console.warn("Backend fetch returned false, falling back to demo data.", response.message);
+          // Genuine unsuccessful backend response → resilience fallback.
+          console.warn("Backend fetch returned an unsuccessful response; using demo fallback.", response.message);
+          setError(response.message || "Backend returned an unsuccessful response.");
           setData(demoData);
+          setFallbackUsed(true);
         }
       } catch (err: any) {
-        console.warn("Backend fetch failed, falling back to demo data.", err);
+        if (err instanceof ContextError) {
+          // Foundation error (missing universityId/reportingPeriodId):
+          // this is a broken request, NOT a backend outage. Never fall back.
+          console.error("Dashboard request was malformed:", err.message);
+          setError(err.message);
+          setData(null);
+          setFallbackUsed(false);
+          return;
+        }
+        // Network / backend failure → resilience fallback, clearly indicated.
+        console.warn("Backend fetch failed; using demo fallback.", err);
+        setError(err?.message || "Backend is unavailable.");
         setData(demoData);
+        setFallbackUsed(true);
       } finally {
         setLoading(false);
       }
     }
 
     fetchData();
-  }, [filters.reportingPeriodId, filters.campusId, filters.buildingId, filters.floorId, filters.scope, filters.dateRange]);
+     
+  }, [periodStatus, activePeriodId, filters.reportingPeriodId]);
 
-  return { data, loading, error, filters, setFilters };
+  return { data, loading, error, fallbackUsed, periods, filters, setFilters };
 }
 
 // Maps the backend format to the exact frontend structures expected
@@ -54,14 +113,14 @@ function mapBackendToFrontend(backendData: any) {
       total: Math.round(t.totalKg / 1000),
       scope1: Math.round(t.scope1Kg / 1000),
       scope2: Math.round(t.scope2Kg / 1000),
-      scope3: 0 // backend doesn't seem to return scope 3 trends right now
+      scope3: Math.round(t.scope3Kg / 1000) || 0
     };
   });
 
   const TOTAL_12M = Math.round(b.overview?.totalEmissionsTonnes || 0);
   const SCOPE1_12M = Math.round(b.overview?.scope1Tonnes || 0);
   const SCOPE2_12M = Math.round(b.overview?.scope2Tonnes || 0);
-  const SCOPE3_12M = 0; // Update when scope 3 is available
+  const SCOPE3_12M = Math.round(b.overview?.scope3Tonnes || 0);
 
   const SCOPES = [
     { key: "scope1", name: "Scope 1 — Direct", value: SCOPE1_12M, share: TOTAL_12M ? SCOPE1_12M / TOTAL_12M : 0, color: "#15803d" },
@@ -74,8 +133,8 @@ function mapBackendToFrontend(backendData: any) {
     scope: c.scope === "SCOPE_1" ? "S1" : c.scope === "SCOPE_2" ? "S2" : "S3",
     value: Math.round(c.tonnesCO2e),
     share: TOTAL_12M ? c.tonnesCO2e / TOTAL_12M : 0,
-    trend: c.trend || 0, 
-    sources: 1, 
+    trend: c.trend || 0,
+    sources: 1,
   }));
 
   const KPIS = [
@@ -160,7 +219,7 @@ function mapBackendToFrontend(backendData: any) {
       color: "#86efac",
       share: TOTAL_12M ? SCOPE3_12M / TOTAL_12M : 0,
       total: SCOPE3_12M,
-      delta: 0,
+      delta: b.scopeBreakdown?.scope3?.delta || 0,
       intensity: 0,
       monthly: MONTHLY.map((m: any) => ({ month: m.month, value: m.scope3 })),
       sources: (b.categories || [])

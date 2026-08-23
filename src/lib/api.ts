@@ -1,5 +1,29 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
 
+/**
+ * Thrown when a request cannot be formed correctly because the frontend
+ * foundation (universityId / reportingPeriodId) is not initialized.
+ * Callers must NOT treat this as a backend failure (no demo fallback).
+ */
+export class ContextError extends Error {}
+
+function getStoredId(key: string): string {
+  return typeof window !== "undefined" ? localStorage.getItem(key) || "" : "";
+}
+
+/** Requires universityId; optionally also reportingPeriodId. */
+export function requireContext(opts: { requirePeriod?: boolean } = {}): { uId: string; pId: string } {
+  const uId = getStoredId("universityId");
+  if (!uId) {
+    throw new ContextError("Missing universityId context — sign in again to initialize your session.");
+  }
+  const pId = getStoredId("reportingPeriodId");
+  if (opts.requirePeriod && !pId) {
+    throw new ContextError("Missing reportingPeriodId context — no reporting period is selected.");
+  }
+  return { uId, pId };
+}
+
 export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = new Headers(options.headers || {});
@@ -37,50 +61,66 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
 
 // Activity Data APIs
 export async function getActivityData() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
-  const pId = typeof window !== "undefined" ? localStorage.getItem("reportingPeriodId") || "" : "";
+  const { uId, pId } = requireContext();
   const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
   return fetchAPI(`/activity-data${query}`);
 }
 
 export async function createActivityData(data: any) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
-  const pId = data.reportingPeriodId || (typeof window !== "undefined" ? localStorage.getItem("reportingPeriodId") || "" : "");
+  const { uId, pId } = requireContext();
   return fetchAPI(`/activity-data`, {
     method: "POST",
-    body: JSON.stringify({ ...data, universityId: uId, reportingPeriodId: pId }),
+    body: JSON.stringify({ ...data, universityId: uId, reportingPeriodId: data.reportingPeriodId || pId }),
   });
 }
 
 export async function updateActivityData(id: string, data: any) {
-  return fetchAPI(`/activity-data/${id}`, {
+  // Live V2 requires universityId as a QUERY param on PATCH (verified).
+  const { uId } = requireContext();
+  return fetchAPI(`/activity-data/${id}?universityId=${uId}`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteActivityData(id: string) {
-  return fetchAPI(`/activity-data/${id}`, {
+  // Live V2 requires universityId as a query param on DELETE (verified).
+  const { uId } = requireContext();
+  return fetchAPI(`/activity-data/${id}?universityId=${uId}`, {
     method: "DELETE",
   });
 }
 
+// Workflow transitions: live V2 requires universityId in the JSON body (verified).
 export async function submitActivityData(id: string) {
-  return fetchAPI(`/activity-data/${id}/submit`, { method: "POST" });
+  const { uId } = requireContext();
+  return fetchAPI(`/activity-data/${id}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ universityId: uId }),
+  });
 }
 
 export async function startReviewActivityData(id: string) {
-  return fetchAPI(`/activity-data/${id}/start-review`, { method: "POST" });
+  const { uId } = requireContext();
+  return fetchAPI(`/activity-data/${id}/start-review`, {
+    method: "POST",
+    body: JSON.stringify({ universityId: uId }),
+  });
 }
 
 export async function verifyActivityData(id: string) {
-  return fetchAPI(`/activity-data/${id}/verify`, { method: "POST" });
+  const { uId } = requireContext();
+  return fetchAPI(`/activity-data/${id}/verify`, {
+    method: "POST",
+    body: JSON.stringify({ universityId: uId }),
+  });
 }
 
 export async function rejectActivityData(id: string, reason: string) {
+  const { uId } = requireContext();
   return fetchAPI(`/activity-data/${id}/reject`, {
     method: "POST",
-    body: JSON.stringify({ reason }),
+    body: JSON.stringify({ reason, universityId: uId }),
   });
 }
 
@@ -95,17 +135,17 @@ export async function calculateEmissions(activityId: string) {
 // DASHBOARD API
 // ==========================================
 export async function getDashboardSummary(universityId?: string, reportingPeriodId?: string) {
-  const uId = universityId || (typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "");
-  const pId = reportingPeriodId || (typeof window !== "undefined" ? localStorage.getItem("reportingPeriodId") || "" : "");
-  
-  let url = `/dashboard/summary?universityId=${uId}`;
-  if (pId) url += `&reportingPeriodId=${pId}`;
+  const { uId, pId } = requireContext();
+  const effectiveUId = universityId || uId;
+  const effectivePId = reportingPeriodId || pId;
+
+  let url = `/dashboard/summary?universityId=${effectiveUId}`;
+  if (effectivePId) url += `&reportingPeriodId=${effectivePId}`;
   return fetchAPI(url);
 }
 
 export async function getReviewActivities() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
-  const pId = typeof window !== "undefined" ? localStorage.getItem("reportingPeriodId") || "" : "";
+  const { uId, pId } = requireContext();
   const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
   return fetchAPI(`/activity-data/review${query}`);
 }
@@ -114,16 +154,17 @@ export async function getReviewActivities() {
 
 // Import APIs
 export async function downloadImportTemplate() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   // Return URL so user can open in new tab
   return `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1"}/activity-data/import/template?universityId=${uId}`;
 }
 
 export async function previewImport(file: File) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId, pId } = requireContext({ requirePeriod: true });
   const formData = new FormData();
   formData.append("file", file);
   formData.append("universityId", uId);
+  formData.append("reportingPeriodId", pId);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = new Headers();
@@ -142,18 +183,17 @@ export async function previewImport(file: File) {
   return res.json();
 }
 
-export async function confirmImport(importJobId: string, validData: any[]) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
-  const pId = typeof window !== "undefined" ? localStorage.getItem("reportingPeriodId") || "" : "";
+export async function confirmImport(jobId: string, validData: any[]) {
+  const { uId, pId } = requireContext({ requirePeriod: true });
   return fetchAPI(`/activity-data/import/confirm`, {
     method: "POST",
-    body: JSON.stringify({ importJobId, universityId: uId, reportingPeriodId: pId, validData }),
+    body: JSON.stringify({ jobId, universityId: uId, reportingPeriodId: pId, validData }),
   });
 }
 
 // Document APIs
 export async function uploadDocument(file: File, documentType: string) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   const formData = new FormData();
   formData.append("file", file);
   formData.append("universityId", uId);
@@ -177,7 +217,7 @@ export async function uploadDocument(file: File, documentType: string) {
 }
 
 export async function getDocuments() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/documents?universityId=${uId}`);
 }
 
@@ -186,22 +226,21 @@ export async function ocrDocument(id: string) {
 }
 
 export async function createActivityFromDocument(id: string, data: any) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
-  const pId = typeof window !== "undefined" ? localStorage.getItem("reportingPeriodId") || "" : "";
+  const { uId, pId } = requireContext();
   return fetchAPI(`/documents/${id}/create-activity`, {
     method: "POST",
-    body: JSON.stringify({ ...data, universityId: uId, reportingPeriodId: pId }),
+    body: JSON.stringify({ ...data, universityId: uId, reportingPeriodId: data.reportingPeriodId || pId }),
   });
 }
 
 // Reporting Periods APIs
 export async function getReportingPeriods() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/reporting-periods?universityId=${uId}`);
 }
 
 export async function createReportingPeriod(data: any) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/reporting-periods`, {
     method: "POST",
     body: JSON.stringify({ ...data, universityId: uId }),
@@ -224,12 +263,12 @@ export async function setBaselineReportingPeriod(id: string) {
 
 // Baselines APIs
 export async function getBaselines() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/baselines?universityId=${uId}`);
 }
 
 export async function createBaseline(data: any) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/baselines`, {
     method: "POST",
     body: JSON.stringify({ ...data, universityId: uId })
@@ -250,12 +289,12 @@ export async function getBaselineComparison(id: string) {
 
 // Targets APIs
 export async function getTargets() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/targets?universityId=${uId}`);
 }
 
 export async function createTarget(data: any) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/targets`, {
     method: "POST",
     body: JSON.stringify({ ...data, universityId: uId })
@@ -268,28 +307,28 @@ export async function getTargetProgress(targetId: string, reportingPeriodId: str
 
 // Emission Factors APIs
 export async function getEmissionFactors() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/emission-factors?universityId=${uId}`);
 }
 
 // Admin Management APIs
 export async function getCampuses() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/campuses?universityId=${uId}`);
 }
 
 export async function getBuildings() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/buildings?universityId=${uId}`);
 }
 
 export async function getFloors() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/floors?universityId=${uId}`);
 }
 
 export async function getAssets() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   return fetchAPI(`/assets?universityId=${uId}`);
 }
 
@@ -299,9 +338,10 @@ export async function getDataQualityMetrics(filters?: {
   scope?: string;
   category?: string;
 }) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId, pId } = requireContext();
   const params = new URLSearchParams({ universityId: uId });
   if (filters?.reportingPeriodId) params.set("reportingPeriodId", filters.reportingPeriodId);
+  else if (pId) params.set("reportingPeriodId", pId);
   if (filters?.scope) params.set("scope", filters.scope);
   if (filters?.category) params.set("category", filters.category);
   return fetchAPI(`/data-quality/metrics?${params.toString()}`);
@@ -313,7 +353,7 @@ export async function getRecommendations(filters?: {
   category?: string;
   status?: string;
 }) {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
+  const { uId } = requireContext();
   const params = new URLSearchParams({ universityId: uId });
   if (filters?.priority) params.set("priority", filters.priority);
   if (filters?.category) params.set("category", filters.category);
@@ -333,8 +373,7 @@ export async function updateRecommendationStatus(id: string, status: string) {
 }
 
 export async function generateRecommendations() {
-  const uId = typeof window !== "undefined" ? localStorage.getItem("universityId") || "" : "";
-  const pId = typeof window !== "undefined" ? localStorage.getItem("reportingPeriodId") || "" : "";
+  const { uId, pId } = requireContext({ requirePeriod: true });
   return fetchAPI(`/recommendations/generate`, {
     method: "POST",
     body: JSON.stringify({ universityId: uId, reportingPeriodId: pId }),
@@ -405,23 +444,55 @@ export async function deleteUser(id: string) {
   return fetchAPI(`/users/${id}`, { method: "DELETE" });
 }
 
-// Admin / University APIs
+// Admin / Campus & Building APIs
+// V2 requires universityId in the create body (verified live).
+export async function createCampus(data: any) {
+  const { uId } = requireContext();
+  return fetchAPI(`/campuses`, { method: "POST", body: JSON.stringify({ ...data, universityId: uId }) });
+}
+export async function createBuilding(data: any) {
+  const { uId } = requireContext();
+  return fetchAPI(`/buildings`, { method: "POST", body: JSON.stringify({ ...data, universityId: uId }) });
+}
+
+// Universities APIs
+export async function getUniversity(id: string) {
+  return fetchAPI(`/universities/${id}`);
+}
+
 export async function updateUniversity(id: string, data: any) {
   return fetchAPI(`/universities/${id}`, { method: "PATCH", body: JSON.stringify(data) });
 }
 
-// Admin / Campus & Building APIs
-export async function createCampus(data: any) {
-  return fetchAPI(`/campuses`, { method: "POST", body: JSON.stringify(data) });
+// ==========================================
+// REPORTS API
+// ==========================================
+export async function generateReport() {
+  const { uId, pId } = requireContext({ requirePeriod: true });
+  return fetchAPI(`/reports/generate`, {
+    method: "POST",
+    body: JSON.stringify({ universityId: uId, reportingPeriodId: pId }),
+  });
 }
-export async function deleteCampus(id: string) {
-  return fetchAPI(`/campuses/${id}`, { method: "DELETE" });
+
+export async function getReports() {
+  const { uId } = requireContext();
+  return fetchAPI(`/reports?universityId=${uId}`);
 }
-export async function createBuilding(data: any) {
-  return fetchAPI(`/buildings`, { method: "POST", body: JSON.stringify(data) });
+
+export async function getReport(id: string) {
+  return fetchAPI(`/reports/${id}`);
 }
-export async function deleteBuilding(id: string) {
-  return fetchAPI(`/buildings/${id}`, { method: "DELETE" });
+
+export async function generateReportPdf(id: string) {
+  return fetchAPI(`/reports/${id}/generate-pdf`, { method: "POST" });
+}
+
+// Response puts `url` at the TOP LEVEL (not inside data) — see V2 doc rule 9.
+export async function getReportDownloadUrl(id: string): Promise<string> {
+  const res = await fetchAPI(`/reports/${id}/download`);
+  if (!res.url) throw new Error(res.message || "Report download is not available yet.");
+  return res.url;
 }
 
 // ==========================================
