@@ -4,21 +4,10 @@ import React, { useState } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import AdminNav from "@/components/admin/AdminNav";
-import { useAuth } from "@/context/AuthContext";
 import { Plus, Buildings, PencilSimple, Trash } from "@phosphor-icons/react";
 
 export default function AdminCampusesPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user: currentUser } = useAuth();
-  const isAdmin = ["SUPER_ADMIN", "UNIVERSITY_ADMIN"].includes(currentUser?.role || "");
-
-  if (!isAdmin) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#fafafa]">
-        <h1 className="text-[20px] font-bold text-red-600">Access Denied</h1>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-dvh bg-[#fafafa]">

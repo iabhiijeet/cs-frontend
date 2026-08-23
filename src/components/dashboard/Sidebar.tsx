@@ -42,36 +42,6 @@ interface NavEntry {
   tint?: string;
 }
 
-// Roles that can see each nav item. Empty array = everyone can see.
-const ROLE_MAP: Partial<Record<TabId, string[]>> = {
-  // Analyze — everyone sees these
-  "overview":           [],
-  "footprint":          [],
-  "category":           [],
-
-  // Carbon — everyone
-  "scope1":             [],
-  "scope2":             [],
-  "scope3":             [],
-
-  // Manage — data entry & above
-  "activity-data":      ["SUPER_ADMIN","UNIVERSITY_ADMIN","SUSTAINABILITY_MANAGER","FACILITIES_MANAGER","DATA_ENTRY","REVIEWER","AUDITOR","MANAGEMENT"],
-  "documents":          ["SUPER_ADMIN","UNIVERSITY_ADMIN","SUSTAINABILITY_MANAGER","FACILITIES_MANAGER","DATA_ENTRY","REVIEWER","AUDITOR","MANAGEMENT"],
-  "review":             ["SUPER_ADMIN","UNIVERSITY_ADMIN","SUSTAINABILITY_MANAGER","REVIEWER","AUDITOR","MANAGEMENT"],
-  "calculations":       ["SUPER_ADMIN","UNIVERSITY_ADMIN","SUSTAINABILITY_MANAGER","REVIEWER","MANAGEMENT"],
-  "baseline":           ["SUPER_ADMIN","UNIVERSITY_ADMIN","SUSTAINABILITY_MANAGER"],
-  "targets":            ["SUPER_ADMIN","UNIVERSITY_ADMIN","SUSTAINABILITY_MANAGER"],
-  "data-quality":       ["SUPER_ADMIN","UNIVERSITY_ADMIN","SUSTAINABILITY_MANAGER","AUDITOR"],
-  "recommendations":    ["SUPER_ADMIN","UNIVERSITY_ADMIN","SUSTAINABILITY_MANAGER","MANAGEMENT"],
-  "reports":            ["SUPER_ADMIN","UNIVERSITY_ADMIN","SUSTAINABILITY_MANAGER","AUDITOR","MANAGEMENT"],
-  "reporting-periods":  ["SUPER_ADMIN","UNIVERSITY_ADMIN"],
-  "emission-factors":   ["SUPER_ADMIN"],
-  "notifications":      [],
-  "team":               ["SUPER_ADMIN","UNIVERSITY_ADMIN"],
-  "settings":           ["SUPER_ADMIN","UNIVERSITY_ADMIN"],
-  "audit-logs":         ["SUPER_ADMIN","AUDITOR"],
-};
-
 const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
   {
     label: "Analyze",
@@ -215,24 +185,13 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
 
       <nav className="mt-[14px] flex flex-1 flex-col gap-[18px] overflow-y-auto px-[12px]">
         {NAV_GROUPS.map((group) => {
-      const visibleItems = group.items.filter((entry) => {
-            const allowed = ROLE_MAP[entry.id];
-            // Empty array = everyone can see
-            if (!allowed || allowed.length === 0) return true;
-            // SUPER_ADMIN sees everything
-            if (user?.role === "SUPER_ADMIN") return true;
-            return allowed.includes(user?.role || "");
-          });
-
-          if (visibleItems.length === 0) return null;
-
           return (
             <div key={group.label}>
               <p className="mb-[6px] px-[10px] text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[#a1a1aa]">
                 {group.label}
               </p>
               <div className="flex flex-col gap-[2px]">
-                {visibleItems.map((entry) => (
+                {group.items.map((entry) => (
                   <NavItem
                     key={entry.id}
                     entry={entry}

@@ -14,7 +14,6 @@ import CountUp from "@/components/dashboard/CountUp";
 import { EASE } from "@/lib/animations";
 import type { TabId } from "@/components/dashboard/Sidebar";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
-import { useAuth } from "@/context/AuthContext";
 import ActivityStatsPanel from "@/components/dashboard/ActivityStatsPanel";
 import { getRecommendations } from "@/lib/api";
 
@@ -28,9 +27,7 @@ const GROUP_ICONS = {
 
 export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
   const { data: { KPIS, SCOPES, FOOTPRINT_GROUPS, TOTAL_12M } } = useDashboardContext();
-  const { user } = useAuth();
-  
-  const isDataEntry = user?.role === "DATA_ENTRY";
+
   const [topRecs, setTopRecs] = useState<any[]>([]);
 
   useEffect(() => {
@@ -58,15 +55,13 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
         </Section>
       </div>
 
-      <div className={`grid grid-cols-1 gap-[16px] ${isDataEntry ? "lg:grid-cols-1" : "lg:grid-cols-2"}`}>
+      <div className="grid grid-cols-1 gap-[16px] lg:grid-cols-2">
         <Section title="Biggest sources" subtitle="Emissions by category" delay={0.3}>
           <CategoryList delay={0.15} />
         </Section>
-        {!isDataEntry && (
-          <Section title="2030 reduction target" subtitle="Science-based · aligned to 1.5 °C" delay={0.35}>
-            <TargetPanel delay={0.2} />
-          </Section>
-        )}
+        <Section title="2030 reduction target" subtitle="Science-based · aligned to 1.5 °C" delay={0.35}>
+          <TargetPanel delay={0.2} />
+        </Section>
       </div>
 
       <div className="grid grid-cols-1 gap-[16px] lg:grid-cols-3">

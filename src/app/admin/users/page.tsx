@@ -7,14 +7,11 @@ import AdminNav from "@/components/admin/AdminNav";
 import { getUsers, createUser, updateUser } from "@/lib/api";
 import { toast } from "sonner";
 import { CircleNotch, Plus, PencilSimple, UserCircle } from "@phosphor-icons/react";
-import { useAuth } from "@/context/AuthContext";
 
 export default function AdminUsersPage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
-  const { user: currentUser } = useAuth();
-  const isAdmin = ["SUPER_ADMIN", "UNIVERSITY_ADMIN"].includes(currentUser?.role || "");
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -29,17 +26,6 @@ export default function AdminUsersPage() {
   }, []);
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
-
-  if (!isAdmin) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#fafafa]">
-        <div className="text-center">
-          <h1 className="text-[20px] font-bold text-red-600">Access Denied</h1>
-          <p className="mt-[8px] text-[13px] text-[#71717a]">You do not have permission to view this page.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-dvh bg-[#fafafa]">

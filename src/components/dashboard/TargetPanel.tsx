@@ -4,13 +4,10 @@ import { motion } from "motion/react";
 import CountUp from "@/components/dashboard/CountUp";
 import { EASE } from "@/lib/animations";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
-import { useAuth } from "@/context/AuthContext";
 import { PencilSimple, Target as TargetIcon } from "@phosphor-icons/react";
 
 export default function TargetPanel({ delay = 0 }: { delay?: number }) {
   const { data: { TARGETS, TOTAL_12M } } = useDashboardContext();
-  const { user } = useAuth();
-  const isAdmin = user?.role === "SUPER_ADMIN" || user?.role === "UNIVERSITY_ADMIN";
 
   if (!TARGETS || TARGETS.length < 2) {
     return (
@@ -48,15 +45,13 @@ export default function TargetPanel({ delay = 0 }: { delay?: number }) {
           <p className="mt-[2px] text-[12px] text-[#71717a]">Science-based aligned to 1.5°C</p>
         </div>
         <div className="flex items-center gap-[8px]">
-          {isAdmin && (
-            <a
-              href="/targets"
-              className="flex items-center gap-[4px] rounded-full border border-black/10 px-[10px] py-[3px] text-[11px] font-medium text-black transition-colors hover:bg-black/5"
-            >
-              <PencilSimple size={12} />
-              Edit target
-            </a>
-          )}
+          <a
+            href="/targets"
+            className="flex items-center gap-[4px] rounded-full border border-black/10 px-[10px] py-[3px] text-[11px] font-medium text-black transition-colors hover:bg-black/5"
+          >
+            <PencilSimple size={12} />
+            Edit target
+          </a>
           <span className={`rounded-full px-[8px] py-[2px] text-[11px] font-semibold ${reductionProgress >= 100 ? "bg-green-100 text-green-700" : "bg-[#f0fdf4] text-[#15803d]"}`}>
             {reductionProgress >= 100 ? "Target Achieved" : "On track"}
           </span>

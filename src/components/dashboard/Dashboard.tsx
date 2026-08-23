@@ -125,8 +125,6 @@ function DashboardContent() {
   );
 }
 
-import ProtectedRoute from "@/components/ProtectedRoute";
-
 export default function Dashboard() {
   return (
 

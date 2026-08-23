@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE } from "@/lib/animations";
-import { useAuth } from "@/context/AuthContext";
-
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import { getReviewActivities, verifyActivityData, rejectActivityData, calculateEmissions, startReviewActivityData } from "@/lib/api";
@@ -14,7 +12,6 @@ import CalculationResultModal from "./CalculationResultModal";
 import ReviewDetailsModal from "./ReviewDetailsModal";
 
 export default function ReviewPage() {
-  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,8 +24,6 @@ export default function ReviewPage() {
   // Calculation & View State
   const [calcResult, setCalcResult] = useState<any>(null);
   const [viewActivity, setViewActivity] = useState<any>(null);
-
-  const isReviewer = ["SUPER_ADMIN", "UNIVERSITY_ADMIN", "MANAGEMENT", "REVIEWER", "AUDITOR"].includes(user?.role || "");
 
   const fetchData = async () => {
     try {
@@ -47,8 +42,8 @@ export default function ReviewPage() {
   };
 
   useEffect(() => {
-    if (isReviewer) fetchData();
-  }, [isReviewer]);
+    fetchData();
+  }, []);
 
   const handleVerify = async (id: string) => {
     if (!confirm("Approve this activity data? It will be marked as verified.")) return;
@@ -120,14 +115,6 @@ export default function ReviewPage() {
     if (filter === "Rejected") return item.status === "REJECTED";
     return true;
   });
-
-  if (user && !isReviewer) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#fafafa]">
-        <p className="text-[#a1a1aa]">You do not have permission to view this page.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-dvh bg-[#fafafa]">

@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { EASE } from "@/lib/animations";
-import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
@@ -14,7 +13,6 @@ import { toast } from "sonner";
 type SettingsTab = "organization" | "campuses" | "buildings" | "floors" | "assets";
 
 export default function SettingsPage() {
-  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<SettingsTab>("organization");
   
@@ -23,8 +21,6 @@ export default function SettingsPage() {
   const [buildings, setBuildings] = useState<any[]>([]);
   const [floors, setFloors] = useState<any[]>([]);
   const [assets, setAssets] = useState<any[]>([]);
-
-  const isAdmin = ["SUPER_ADMIN", "UNIVERSITY_ADMIN"].includes(user?.role || "");
 
   const fetchTabDetails = async (tab: SettingsTab) => {
     setLoading(true);
@@ -50,16 +46,8 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    if (isAdmin) fetchTabDetails(activeTab);
-  }, [activeTab, isAdmin]);
-
-  if (user && !isAdmin) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#fafafa]">
-        <p className="text-[#a1a1aa]">You do not have permission to view this page.</p>
-      </div>
-    );
-  }
+    fetchTabDetails(activeTab);
+  }, [activeTab]);
 
   const TABS = [
     { id: "organization", label: "Organization", icon: BuildingOffice },

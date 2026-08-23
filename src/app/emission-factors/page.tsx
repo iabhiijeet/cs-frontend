@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "motion/react";
 import { EASE } from "@/lib/animations";
-import { useAuth } from "@/context/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
@@ -12,13 +11,10 @@ import { MagnifyingGlass, Leaf, ShieldCheck, GlobeHemisphereWest, Tag } from "@p
 import { toast } from "sonner";
 
 export default function EmissionFactorsPage() {
-  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-
-  const isAdmin = ["SUPER_ADMIN", "UNIVERSITY_ADMIN"].includes(user?.role || "");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,8 +33,8 @@ export default function EmissionFactorsPage() {
       }
     };
 
-    if (isAdmin) fetchData();
-  }, [isAdmin]);
+    fetchData();
+  }, []);
 
   const filteredData = useMemo(() => {
     return data.filter(ef => 
@@ -47,14 +43,6 @@ export default function EmissionFactorsPage() {
       ef.source.toLowerCase().includes(search.toLowerCase())
     );
   }, [data, search]);
-
-  if (user && !isAdmin) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#fafafa]">
-        <p className="text-[#a1a1aa]">You do not have permission to view this page.</p>
-      </div>
-    );
-  }
 
   return (
     <ProtectedRoute>

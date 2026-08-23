@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/context/AuthContext";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import { fetchAPI, getBaselines, createBaseline, approveBaseline, getBaselineComparison } from "@/lib/api";
@@ -10,7 +9,6 @@ import { CheckCircle, LockKey } from "@phosphor-icons/react";
 import BaselineComparisonView from "./BaselineComparisonView";
 
 export default function BaselinePage() {
-  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -20,8 +18,6 @@ export default function BaselinePage() {
   
   const [activeBaseline, setActiveBaseline] = useState<any>(null);
   const [comparisonData, setComparisonData] = useState<any>(null);
-
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
 
   const fetchData = async () => {
     try {
@@ -130,7 +126,7 @@ export default function BaselinePage() {
           <div className="mx-auto flex max-w-[1240px] flex-col gap-[24px]">
             
             {/* Baseline Selection */}
-            {isAdmin && (!activeBaseline || activeBaseline.status !== "APPROVED") && (
+            {(!activeBaseline || activeBaseline.status !== "APPROVED") && (
               <div className="rounded-[12px] border border-black/[0.08] bg-white p-[24px] shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col gap-[16px]">
                 <div>
                   <h2 className="text-[16px] font-semibold text-black">Select Baseline Period</h2>
@@ -176,14 +172,12 @@ export default function BaselinePage() {
                   ) : (
                     <div className="flex items-center gap-[12px]">
                       <span className="text-[12px] font-semibold text-orange-600 bg-orange-50 px-2 py-1 rounded">DRAFT</span>
-                      {isAdmin && (
-                        <button 
-                          onClick={() => handleConfirmBaseline(activeBaseline.id)}
-                          className="flex items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-[#15803d] transition-colors"
-                        >
-                          <LockKey size={16} weight="bold" /> Confirm Baseline
-                        </button>
-                      )}
+                      <button 
+                        onClick={() => handleConfirmBaseline(activeBaseline.id)}
+                        className="flex items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-[#15803d] transition-colors"
+                      >
+                        <LockKey size={16} weight="bold" /> Confirm Baseline
+                      </button>
                     </div>
                   )}
                 </div>

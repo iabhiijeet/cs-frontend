@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE } from "@/lib/animations";
-import { useAuth } from "@/context/AuthContext";
 
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
@@ -13,7 +12,6 @@ import { toast } from "sonner";
 import ReportingPeriodModal from "./ReportingPeriodModal";
 
 export default function ReportingPeriodsPage() {
-  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,8 +59,6 @@ export default function ReportingPeriodsPage() {
     }
   };
 
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
-
   return (
     <div className="flex min-h-dvh bg-[#fafafa]">
         <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={"reporting-periods"} onChange={() => {}} />
@@ -79,14 +75,12 @@ export default function ReportingPeriodsPage() {
               
               <div className="flex items-center justify-between">
                 <h1 className="text-[18px] font-semibold text-black">All Reporting Periods</h1>
-                {isAdmin && (
-                  <button 
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-[6px] rounded-[8px] bg-black px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-black/80 transition-colors"
-                  >
-                    <Plus size={16} weight="bold" /> Create Reporting Period
-                  </button>
-                )}
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex items-center gap-[6px] rounded-[8px] bg-black px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-black/80 transition-colors"
+                >
+                  <Plus size={16} weight="bold" /> Create Reporting Period
+                </button>
               </div>
 
               <motion.div
@@ -132,22 +126,20 @@ export default function ReportingPeriodsPage() {
                             {item.status}
                           </span>
                         </div>
-                        {isAdmin && (
-                          <button 
-                            onClick={() => handleToggleLock(item.id, item.status)}
-                            className={`flex items-center gap-[6px] rounded-[6px] border px-[12px] py-[6px] text-[12px] font-medium transition-colors ${
-                              item.status === 'OPEN' 
-                                ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300' 
-                                : 'border-black/[0.1] bg-white text-black hover:bg-black/5'
-                            }`}
-                          >
-                            {item.status === 'OPEN' ? (
-                              <><LockKey size={14} weight="bold" /> Lock Period</>
-                            ) : (
-                              <><LockOpen size={14} weight="bold" /> Unlock Period</>
-                            )}
-                          </button>
-                        )}
+                        <button 
+                          onClick={() => handleToggleLock(item.id, item.status)}
+                          className={`flex items-center gap-[6px] rounded-[6px] border px-[12px] py-[6px] text-[12px] font-medium transition-colors ${
+                            item.status === 'OPEN' 
+                              ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100 hover:border-red-300' 
+                              : 'border-black/[0.1] bg-white text-black hover:bg-black/5'
+                          }`}
+                        >
+                          {item.status === 'OPEN' ? (
+                            <><LockKey size={14} weight="bold" /> Lock Period</>
+                          ) : (
+                            <><LockOpen size={14} weight="bold" /> Unlock Period</>
+                          )}
+                        </button>
                       </div>
                     </div>
                   ))

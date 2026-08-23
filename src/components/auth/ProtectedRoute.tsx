@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { CircleNotch } from "@phosphor-icons/react";
 
-export default function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) {
+// Authentication-only guard (JWT demo). No role-based authorization:
+// RBAC will be reintroduced as a separate, backend-driven phase.
+export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
@@ -24,17 +26,6 @@ export default function ProtectedRoute({ children, allowedRoles }: { children: R
   }
 
   if (!user) return null;
-
-  if (allowedRoles && !allowedRoles.includes(user.role ?? "")) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#fafafa]">
-        <div className="text-center">
-          <h1 className="text-[20px] font-bold text-red-600">Access Denied</h1>
-          <p className="mt-[8px] text-[13px] text-[#71717a]">You do not have permission to view this page.</p>
-        </div>
-      </div>
-    );
-  }
 
   return <>{children}</>;
 }

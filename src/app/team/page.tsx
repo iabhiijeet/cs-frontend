@@ -10,7 +10,6 @@ import { getUsers, createUser, deleteUser } from "@/lib/api";
 
 export default function TeamPage() {
   const { user } = useAuth();
-  const isAdmin = ["SUPER_ADMIN", "UNIVERSITY_ADMIN"].includes(user?.role || "");
 
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,19 +35,8 @@ export default function TeamPage() {
   };
 
   useEffect(() => {
-    if (isAdmin) {
-      loadUsers();
-    }
-  }, [isAdmin]);
-
-  // Fallback protection in case a non-admin gets here
-  if (user && !isAdmin) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#fafafa]">
-        <p className="text-[#a1a1aa]">You do not have permission to view this page.</p>
-      </div>
-    );
-  }
+    loadUsers();
+  }, []);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,11 +71,7 @@ export default function TeamPage() {
     }
   };
 
-  const handleDelete = async (id: string, role: string) => {
-    if (role === "SUPER_ADMIN") {
-      alert("Cannot delete SUPER_ADMIN accounts.");
-      return;
-    }
+  const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this user?")) {
       try {
         const res = await deleteUser(id);
@@ -181,9 +165,9 @@ export default function TeamPage() {
                             )}
                           </td>
                           <td className="px-[20px] py-[16px] text-right">
-                            {u.role !== "SUPER_ADMIN" && u.id !== user?.id && (
+                            {u.id !== user?.id && (
                               <button 
-                                onClick={() => handleDelete(u.id, u.role)}
+                                onClick={() => handleDelete(u.id)}
                                 className="text-[#a1a1aa] hover:text-red-600 transition-colors"
                               >
                                 <Trash size={16} weight="bold" />
@@ -268,7 +252,7 @@ export default function TeamPage() {
                       onChange={(e) => setFormData({...formData, role: e.target.value})}
                       className="w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] py-[8px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
                     >
-                      {user?.role === "SUPER_ADMIN" && <option value="UNIVERSITY_ADMIN">University Admin</option>}
+                      <option value="UNIVERSITY_ADMIN">University Admin</option>
                       <option value="SUSTAINABILITY_MANAGER">Sustainability Manager</option>
                       <option value="FACILITIES_MANAGER">Facilities Manager</option>
                       <option value="REVIEWER">Reviewer</option>
@@ -279,19 +263,17 @@ export default function TeamPage() {
                     </select>
                   </div>
 
-                  {user?.role === "SUPER_ADMIN" && (
-                    <div>
-                      <label className="block text-[12px] font-medium text-[#71717a] mb-[6px]">University ID (UUID)</label>
-                      <input 
-                        required
-                        type="text" 
-                        value={formData.universityId}
-                        onChange={(e) => setFormData({...formData, universityId: e.target.value})}
-                        className="w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] py-[8px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
-                        placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-                      />
-                    </div>
-                  )}
+                  <div>
+                    <label className="block text-[12px] font-medium text-[#71717a] mb-[6px]">University ID (UUID)</label>
+                    <input 
+                      required
+                      type="text" 
+                      value={formData.universityId}
+                      onChange={(e) => setFormData({...formData, universityId: e.target.value})}
+                      className="w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] py-[8px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
+                      placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
+                    />
+                  </div>
 
                   <div className="mt-[8px] flex gap-[10px] justify-end">
                     <button 

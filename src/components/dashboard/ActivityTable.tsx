@@ -4,7 +4,6 @@ import { motion } from "motion/react";
 import { ArrowRight, CheckCircle, Clock, DotsThree, WarningCircle } from "@phosphor-icons/react";
 import { EASE } from "@/lib/animations";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
-import { useAuth } from "@/context/AuthContext";
 import { Plus } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -17,9 +16,6 @@ const STATUS = {
 
 export default function ActivityTable({ delay = 0 }: { delay?: number }) {
   const { data: { ACTIVITY } } = useDashboardContext();
-  const { user } = useAuth();
-  const canAddData = ["SUPER_ADMIN", "UNIVERSITY_ADMIN", "DATA_ENTRY"].includes(user?.role || "");
-  const canReview = ["SUPER_ADMIN", "UNIVERSITY_ADMIN", "REVIEWER", "AUDITOR"].includes(user?.role || "");
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
 
   const hasData = ACTIVITY && ACTIVITY.length > 0;
@@ -32,15 +28,13 @@ export default function ActivityTable({ delay = 0 }: { delay?: number }) {
           <p className="mt-[2px] text-[12px] text-[#71717a]">Latest data processed from your sources</p>
         </div>
         <div className="flex items-center gap-[12px]">
-          {canAddData && (
-            <button 
-              onClick={() => toast.success("Data entry form will be opened")}
-              className="flex items-center gap-[4px] rounded-full bg-[#16a34a] px-[12px] py-[4px] text-[11px] font-semibold text-white transition-colors hover:bg-[#15803d]"
-            >
-              <Plus size={12} weight="bold" />
-              Add data
-            </button>
-          )}
+          <button 
+            onClick={() => toast.success("Data entry form will be opened")}
+            className="flex items-center gap-[4px] rounded-full bg-[#16a34a] px-[12px] py-[4px] text-[11px] font-semibold text-white transition-colors hover:bg-[#15803d]"
+          >
+            <Plus size={12} weight="bold" />
+            Add data
+          </button>
           <button className="flex items-center gap-[4px] text-[12px] font-semibold text-[#15803d] transition-colors hover:text-[#0d3b2d]">
             View all <ArrowRight size={12} weight="bold" />
           </button>
@@ -106,7 +100,7 @@ export default function ActivityTable({ delay = 0 }: { delay?: number }) {
                       
                       {activeMenu === row.source && (
                         <div className="absolute right-0 top-[30px] z-10 w-[120px] rounded-[8px] border border-black/[0.06] bg-white p-[6px] shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
-                          {canReview && row.status === "Needs review" && (
+                          {row.status === "Needs review" && (
                             <>
                               <button 
                                 onClick={() => { setActiveMenu(null); toast.success("Activity approved"); }}
@@ -122,14 +116,12 @@ export default function ActivityTable({ delay = 0 }: { delay?: number }) {
                               </button>
                             </>
                           )}
-                          {canAddData && (
-                            <button 
-                              onClick={() => { setActiveMenu(null); toast.info("Edit mode active"); }}
-                              className="w-full rounded-[6px] px-[8px] py-[6px] text-left text-[12px] font-medium text-[#52525b] hover:bg-black/[0.04]"
-                            >
-                              Edit log
-                            </button>
-                          )}
+                          <button 
+                            onClick={() => { setActiveMenu(null); toast.info("Edit mode active"); }}
+                            className="w-full rounded-[6px] px-[8px] py-[6px] text-left text-[12px] font-medium text-[#52525b] hover:bg-black/[0.04]"
+                          >
+                            Edit log
+                          </button>
                         </div>
                       )}
                     </td>
@@ -145,7 +137,7 @@ export default function ActivityTable({ delay = 0 }: { delay?: number }) {
             </div>
             <p className="mt-[12px] text-[13px] font-medium text-black">No recent activity</p>
             <p className="mt-[4px] text-[12px] text-[#71717a]">
-              {canAddData ? "Click 'Add data' to log your first emission." : "Waiting for new data logs to be processed."}
+              Click &apos;Add data&apos; to log your first emission.
             </p>
           </div>
         )}

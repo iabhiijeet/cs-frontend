@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE } from "@/lib/animations";
-import { useAuth } from "@/context/AuthContext";
 
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
@@ -15,7 +14,6 @@ import ViewActivityModal from "./ViewActivityModal";
 import { useReportingPeriodStatus } from "@/hooks/useReportingPeriodStatus";
 
 export default function ActivityDataPage() {
-  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

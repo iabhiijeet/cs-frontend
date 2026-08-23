@@ -6,7 +6,6 @@ import { useState } from "react";
 import { EASE } from "@/lib/animations";
 import { createReportingPeriod } from "@/lib/api";
 import { toast } from "sonner";
-import { useAuth } from "@/context/AuthContext";
 
 interface ReportingPeriodModalProps {
   onClose: () => void;
@@ -14,7 +13,6 @@ interface ReportingPeriodModalProps {
 }
 
 export default function ReportingPeriodModal({ onClose, onSuccess }: ReportingPeriodModalProps) {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",

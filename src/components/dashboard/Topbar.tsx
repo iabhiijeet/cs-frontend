@@ -20,9 +20,7 @@ interface TopbarProps {
 export default function Topbar({ onMenu, title, subtitle }: TopbarProps) {
   const [range, setRange] = useState(0);
   const [open, setOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const canExport = ["SUPER_ADMIN", "UNIVERSITY_ADMIN", "MANAGEMENT", "AUDITOR"].includes(user?.role || "");
-  const canLock = ["SUPER_ADMIN", "UNIVERSITY_ADMIN", "MANAGEMENT"].includes(user?.role || "");
+  const { logout } = useAuth();
   const [isLocked, setIsLocked] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -119,36 +117,32 @@ export default function Topbar({ onMenu, title, subtitle }: TopbarProps) {
           </AnimatePresence>
         </div>
 
-        {canLock && (
-          <button 
-            onClick={() => {
-              const newState = !isLocked;
-              setIsLocked(newState);
-              toast.success(`Reporting period ${newState ? "locked" : "unlocked"} successfully`);
-            }}
-            className={`hidden h-[34px] items-center gap-[6px] rounded-[8px] px-[12px] text-[13px] font-semibold transition-colors md:flex ${
-              isLocked 
-                ? "bg-[#fffbeb] text-[#d97706] border border-[#f59e0b]/20 hover:bg-[#fef3c7]" 
-                : "bg-white border border-black/[0.06] text-[#52525b] hover:bg-black/5"
-            }`}
-          >
-            <LockKey size={14} weight={isLocked ? "fill" : "regular"} />
-            {isLocked ? "Period Locked" : "Lock Period"}
-          </button>
-        )}
+        <button 
+          onClick={() => {
+            const newState = !isLocked;
+            setIsLocked(newState);
+            toast.success(`Reporting period ${newState ? "locked" : "unlocked"} successfully`);
+          }}
+          className={`hidden h-[34px] items-center gap-[6px] rounded-[8px] px-[12px] text-[13px] font-semibold transition-colors md:flex ${
+            isLocked 
+              ? "bg-[#fffbeb] text-[#d97706] border border-[#f59e0b]/20 hover:bg-[#fef3c7]" 
+              : "bg-white border border-black/[0.06] text-[#52525b] hover:bg-black/5"
+          }`}
+        >
+          <LockKey size={14} weight={isLocked ? "fill" : "regular"} />
+          {isLocked ? "Period Locked" : "Lock Period"}
+        </button>
 
-        {canExport && (
-          <button 
-            onClick={() => {
-              const t = toast.loading("Preparing export...");
-              setTimeout(() => toast.success("Export successful", { id: t }), 1500);
-            }}
-            className="hidden h-[34px] items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[12px] text-[13px] font-semibold text-white transition-colors hover:bg-[#15803d] md:flex"
-          >
-            <DownloadSimple size={14} />
-            Export
-          </button>
-        )}
+        <button 
+          onClick={() => {
+            const t = toast.loading("Preparing export...");
+            setTimeout(() => toast.success("Export successful", { id: t }), 1500);
+          }}
+          className="hidden h-[34px] items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[12px] text-[13px] font-semibold text-white transition-colors hover:bg-[#15803d] md:flex"
+        >
+          <DownloadSimple size={14} />
+          Export
+        </button>
 
         <div className="relative">
           <button 
