@@ -1,0 +1,70 @@
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m refs/heads/main@{Mon Aug 24 02:58:35 2026}: reset: moving to ORIG_HEAD
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{Mon Aug 24 02:58:35 2026}: reset: moving to ORIG_HEAD
+[33mb1fc9e7[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m refs/remotes/origin/main@{Mon Aug 24 01:51:43 2026}: update by push
+[33mb1fc9e7[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m refs/heads/main@{Mon Aug 24 01:51:24 2026}: commit (merge): Merge branch 'priyanshu'
+[33mb1fc9e7[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m HEAD@{Mon Aug 24 01:51:24 2026}: commit (merge): Merge branch 'priyanshu'
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{Mon Aug 24 01:49:03 2026}: checkout: moving from main to main
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{Mon Aug 24 01:48:28 2026}: checkout: moving from priyanshu to main
+[33mcf82aff[m[33m ([m[1;31morigin/priyanshu[m[33m, [m[1;32mpriyanshu[m[33m)[m HEAD@{Mon Aug 24 01:48:04 2026}: checkout: moving from main to priyanshu
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{Mon Aug 24 01:46:01 2026}: checkout: moving from priyanshu to main
+[33mcf82aff[m[33m ([m[1;31morigin/priyanshu[m[33m, [m[1;32mpriyanshu[m[33m)[m refs/remotes/origin/priyanshu@{Mon Aug 24 01:43:10 2026}: update by push
+[33mcf82aff[m[33m ([m[1;31morigin/priyanshu[m[33m, [m[1;32mpriyanshu[m[33m)[m refs/heads/priyanshu@{Mon Aug 24 01:42:34 2026}: rebase (finish): refs/heads/priyanshu onto 9f7ae1c3bc477717acaa802c3a3bb231fe39b982
+[33mcf82aff[m[33m ([m[1;31morigin/priyanshu[m[33m, [m[1;32mpriyanshu[m[33m)[m HEAD@{Mon Aug 24 01:42:34 2026}: rebase (finish): returning to refs/heads/priyanshu
+[33mcf82aff[m[33m ([m[1;31morigin/priyanshu[m[33m, [m[1;32mpriyanshu[m[33m)[m HEAD@{Mon Aug 24 01:42:34 2026}: rebase (pick): chore: update package-lock.json dependencies
+[33m7871c0f[m HEAD@{Mon Aug 24 01:42:34 2026}: rebase (pick): feat: remove Supabase dependencies and implement a centralized custom API service module
+[33mc864c25[m HEAD@{Mon Aug 24 01:42:34 2026}: rebase (pick): feat: add user signup page, reporting period resolution hook, and API request handling utilities
+[33m9f32fbd[m HEAD@{Mon Aug 24 01:42:34 2026}: rebase (pick): feat: implement core infrastructure management pages, authentication context, and dashboard navigation utilities
+[33m2813ce2[m HEAD@{Mon Aug 24 01:42:34 2026}: rebase (pick): feat: Removed RBAC
+[33m7d32451[m HEAD@{Mon Aug 24 01:42:34 2026}: rebase (pick): updated pkg json
+[33m1b8c10f[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): redesign: premium light theme, hollow globe background, polished header/footer/solutions
+[33m6c3053b[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): added globe
+[33m30719b8[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: migrate to JWT-based authentication and add dashboard routing with updated header navigation.
+[33m702cf60[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: comment out authentication logic in signIn and signUp functions, update Dashboard component structure
+[33m7db6182[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: comment out authentication logic in signIn and signUp actionshanges f
+[33ma194fc0[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: update .gitignore to exclude .env.local and add .env.example for environment variable configuration
+[33m81d4d12[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: refactor authentication flow and update routing to use /auth/signin
+[33m798ad3b[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: redirect users to dashboard after sign in and sign up
+[33mcf3985c[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): Auth implemented
+[33m19d8e4b[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: implement AuthContext for user authentication management and session handling
+[33m68b279e[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: implement team management page for admins to invite and remove users
+[33md8a3c1e[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: implement role-based navigation sidebar with workspace switcher and route handling
+[33m2c8167e[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): changes dashboard
+[33mc151269[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): feat: implement carbon dashboard UI with category, scope, and target visualizations
+[33m756c091[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): updated dashboard
+[33m8de2199[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): add logo, capabilities section and restore visuals
+[33m46a1311[m HEAD@{Mon Aug 24 01:42:33 2026}: rebase (pick): update
+[33mf3df1cf[m HEAD@{Mon Aug 24 01:42:25 2026}: rebase (continue): Initial commit from Create Next App
+[33m9f7ae1c[m HEAD@{Mon Aug 24 01:41:02 2026}: rebase (start): checkout origin/main
+[33m9f7ae1c[m refs/remotes/origin/main@{Mon Aug 24 01:39:30 2026}: fetch: forced-update
+[33m2ca24b8[m refs/heads/priyanshu@{Mon Aug 24 01:31:48 2026}: commit: chore: update package-lock.json dependencies
+[33m2ca24b8[m HEAD@{Mon Aug 24 01:31:48 2026}: commit: chore: update package-lock.json dependencies
+[33med2a2d8[m refs/heads/priyanshu@{Mon Aug 24 01:30:43 2026}: rebase (finish): refs/heads/priyanshu onto dfefe2b348744d1e1be19986fe3d142e0f0ba345
+[33med2a2d8[m HEAD@{Mon Aug 24 01:30:43 2026}: rebase (finish): returning to refs/heads/priyanshu
+[33med2a2d8[m HEAD@{Mon Aug 24 01:30:43 2026}: rebase (continue): feat: remove Supabase dependencies and implement a centralized custom API service module
+[33mbb5bc19[m HEAD@{Mon Aug 24 01:25:15 2026}: rebase (pick): feat: add user signup page, reporting period resolution hook, and API request handling utilities
+[33m99f4230[m HEAD@{Mon Aug 24 01:25:15 2026}: rebase (pick): feat: implement core infrastructure management pages, authentication context, and dashboard navigation utilities
+[33mffb1200[m HEAD@{Mon Aug 24 01:25:15 2026}: rebase (pick): feat: Removed RBAC
+[33mdfefe2b[m HEAD@{Mon Aug 24 01:25:15 2026}: rebase (start): checkout origin/main
+[33m741a042[m refs/heads/priyanshu@{Mon Aug 24 00:38:02 2026}: commit: feat: remove Supabase dependencies and implement a centralized custom API service module
+[33m741a042[m HEAD@{Mon Aug 24 00:38:02 2026}: commit: feat: remove Supabase dependencies and implement a centralized custom API service module
+[33m41bead6[m refs/heads/priyanshu@{Sun Aug 23 20:27:06 2026}: commit: feat: add user signup page, reporting period resolution hook, and API request handling utilities
+[33m41bead6[m HEAD@{Sun Aug 23 20:27:06 2026}: commit: feat: add user signup page, reporting period resolution hook, and API request handling utilities
+[33m00db0d8[m refs/heads/priyanshu@{Sun Aug 23 18:19:13 2026}: commit: feat: implement core infrastructure management pages, authentication context, and dashboard navigation utilities
+[33m00db0d8[m HEAD@{Sun Aug 23 18:19:13 2026}: commit: feat: implement core infrastructure management pages, authentication context, and dashboard navigation utilities
+[33m5d92694[m refs/heads/priyanshu@{Sun Aug 23 11:01:02 2026}: commit: feat: Removed RBAC
+[33m5d92694[m HEAD@{Sun Aug 23 11:01:02 2026}: commit: feat: Removed RBAC
+[33mdfefe2b[m refs/remotes/origin/main@{Sun Aug 23 02:58:57 2026}: fetch: fast-forward
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m refs/heads/priyanshu@{Sun Aug 23 01:57:31 2026}: branch: Created from HEAD
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{Sun Aug 23 01:57:31 2026}: checkout: moving from main to priyanshu
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m refs/remotes/origin/main@{Sun Aug 23 01:56:22 2026}: update by push
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m refs/heads/main@{Sun Aug 23 01:42:47 2026}: commit: feat: migrate to JWT-based authentication and add dashboard routing with updated header navigation.
+[33m820a702[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m HEAD@{Sun Aug 23 01:42:47 2026}: commit: feat: migrate to JWT-based authentication and add dashboard routing with updated header navigation.
+[33mbbfde60[m refs/heads/main@{Sat Aug 22 23:38:53 2026}: pull --tags origin main: Fast-forward
+[33mbbfde60[m refs/remotes/origin/main@{Sat Aug 22 23:38:53 2026}: pull --tags origin main: fast-forward
+[33mbbfde60[m HEAD@{Sat Aug 22 23:38:53 2026}: pull --tags origin main: Fast-forward
+[33mb08785a[m refs/heads/main@{Sat Aug 22 23:28:33 2026}: pull --tags origin main: Fast-forward
+[33mb08785a[m refs/remotes/origin/main@{Sat Aug 22 23:28:33 2026}: pull --tags origin main: fast-forward
+[33mb08785a[m HEAD@{Sat Aug 22 23:28:33 2026}: pull --tags origin main: Fast-forward
+[33m4cca5e5[m refs/heads/main@{Sat Aug 22 20:00:10 2026}: clone: from https://github.com/srivastava-ayush/new-carbon.git
+[33m4cca5e5[m refs/remotes/origin/HEAD@{Sat Aug 22 20:00:10 2026}: clone: from https://github.com/srivastava-ayush/new-carbon.git
+[33m4cca5e5[m HEAD@{Sat Aug 22 20:00:10 2026}: clone: from https://github.com/srivastava-ayush/new-carbon.git

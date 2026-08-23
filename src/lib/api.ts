@@ -35,6 +35,49 @@ export function requireContext(opts: { requirePeriod?: boolean } = {}): { uId: s
   return { uId, pId };
 }
 
+/**
+ * V2 backend error bodies use { success, error?, details?[] } or { success,
+ * message }. Extract the most specific human-readable message available so
+ * validation failures (e.g. "Activity date must be within reporting period")
+ * reach the user instead of a generic status-code toast.
+ */
+function extractApiErrorMessage(data: unknown, fallback: string): string {
+  if (typeof data === "string" && data.trim()) return data;
+  const payload = (data ?? {}) as {
+    error?: unknown;
+    message?: unknown;
+    details?: unknown;
+  };
+
+  const parts: string[] = [];
+  if (typeof payload.error === "string" && payload.error.trim()) {
+    parts.push(payload.error);
+  }
+  if (Array.isArray(payload.details) && payload.details.length > 0) {
+    const detailText = payload.details
+      .map((item) => {
+        const issue = (item ?? {}) as { field?: unknown; message?: unknown };
+        const field = typeof issue.field === "string" ? issue.field : "";
+        const message =
+          typeof issue.message === "string" && issue.message.trim()
+            ? issue.message
+            : "is invalid";
+        return field ? `${field}: ${message}` : message;
+      })
+      .filter(Boolean)
+      .join("; ");
+    if (detailText) parts.push(detailText);
+  }
+  if (parts.length === 0) {
+    if (typeof payload.message === "string" && payload.message.trim()) {
+      parts.push(payload.message);
+    } else {
+      parts.push(fallback);
+    }
+  }
+  return parts.join(" | ");
+}
+
 export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = new Headers(options.headers || {});
@@ -58,11 +101,15 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   }
 
   if (response.status === 401) {
-    throw new Error(data.message || "Session expired. Please log in again.");
+    throw new Error(
+      extractApiErrorMessage(data, "Session expired. Please log in again."),
+    );
   }
 
   if (!response.ok) {
-    throw new Error(data.message || `API error: ${response.status}`);
+    throw new Error(
+      extractApiErrorMessage(data, `API error: ${response.status}`),
+    );
   }
 
   return data;

@@ -56,8 +56,22 @@ export default function AddActivityModal({ onClose, onSuccess }: AddActivityModa
     loadPeriods();
   }, []);
 
+  const selectedPeriod = periods.find((p: any) => p.id === formData.reportingPeriodId);
+  const periodStart = selectedPeriod ? String(selectedPeriod.startDate).slice(0, 10) : undefined;
+  const periodEnd = selectedPeriod ? String(selectedPeriod.endDate).slice(0, 10) : undefined;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.reportingPeriodId) {
+      toast.error("Select a reporting period");
+      return;
+    }
+    if (periodStart && periodEnd && (formData.activityDate < periodStart || formData.activityDate > periodEnd)) {
+      toast.error(
+        `Activity date must be within ${selectedPeriod?.name ?? "the selected reporting period"} (${periodStart} to ${periodEnd})`,
+      );
+      return;
+    }
     setLoading(true);
     try {
       const payload = {
@@ -71,7 +85,7 @@ export default function AddActivityModal({ onClose, onSuccess }: AddActivityModa
         toast.success("Activity drafted successfully");
         onSuccess();
       } else {
-        toast.error(res.message || "Failed to create activity");
+        toast.error(res.error || res.message || "Failed to create activity");
       }
     } catch (err: any) {
       toast.error(err.message || "An error occurred");
@@ -113,7 +127,20 @@ export default function AddActivityModal({ onClose, onSuccess }: AddActivityModa
               required
               className="rounded-[8px] border border-black/[0.1] bg-white px-[12px] py-[8px] text-[14px] outline-none focus:border-black focus:ring-1 focus:ring-black"
               value={formData.reportingPeriodId}
-              onChange={(e) => setFormData(prev => ({ ...prev, reportingPeriodId: e.target.value }))}
+              onChange={(e) => {
+                const pid = e.target.value;
+                const p = periods.find((x: any) => x.id === pid);
+                setFormData(prev => {
+                  const next = { ...prev, reportingPeriodId: pid };
+                  if (p) {
+                    const s = String(p.startDate).slice(0, 10);
+                    const en = String(p.endDate).slice(0, 10);
+                    if (next.activityDate < s) next.activityDate = s;
+                    else if (next.activityDate > en) next.activityDate = en;
+                  }
+                  return next;
+                });
+              }}
             >
               <option value="" disabled>Select Reporting Period</option>
               {periods.map(p => (
@@ -187,6 +214,8 @@ export default function AddActivityModal({ onClose, onSuccess }: AddActivityModa
               required
               type="date"
               value={formData.activityDate}
+              min={periodStart}
+              max={periodEnd}
               onChange={(e) => setFormData({ ...formData, activityDate: e.target.value })}
               className="h-[36px] w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
             />
