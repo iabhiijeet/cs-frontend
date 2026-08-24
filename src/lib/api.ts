@@ -584,7 +584,6 @@ export async function register(payload: {
   username: string;
   email: string;
   password: string;
-  organisationName: string;
 }): Promise<AuthResponse> {
   return fetchAPI(`/auth/register`, {
     method: "POST",
