@@ -33,7 +33,9 @@ export default function SignUpForm() {
         return;
       }
       setAuth(res.data.token, res.data.user);
-      router.push('/dashboard');
+      // New accounts go straight through onboarding; the organisation was
+      // already provisioned server-side during registration.
+      router.push('/onboarding');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create account');
       setIsPending(false);

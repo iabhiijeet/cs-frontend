@@ -1,3 +1,5 @@
+import type { OnboardingData } from "@/app/onboarding/_types/onboarding";
+
 /**
  * Backend API base URL. Required in every environment — there is deliberately
  * NO hardcoded default so a missing NEXT_PUBLIC_API_URL fails loudly at
@@ -78,10 +80,18 @@ function extractApiErrorMessage(data: unknown, fallback: string): string {
   return parts.join(" | ");
 }
 
-export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
+/**
+ * Core request helper. Returns the parsed body plus the HTTP status so
+ * callers that need to distinguish statuses (e.g. onboarding 404 = "not
+ * submitted yet") can do so without parsing error strings.
+ */
+async function requestJson(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<{ ok: boolean; status: number; data: any }> {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
   const headers = new Headers(options.headers || {});
-  
+
   headers.set("Content-Type", "application/json");
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
@@ -100,15 +110,25 @@ export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     data = { message: text };
   }
 
-  if (response.status === 401) {
+  return { ok: response.ok, status: response.status, data };
+}
+
+/**
+ * Standard API call: resolves with the parsed body or throws an Error whose
+ * message carries the most specific backend-provided explanation.
+ */
+export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
+  const { ok, status, data } = await requestJson(endpoint, options);
+
+  if (status === 401) {
     throw new Error(
       extractApiErrorMessage(data, "Session expired. Please log in again."),
     );
   }
 
-  if (!response.ok) {
+  if (!ok) {
     throw new Error(
-      extractApiErrorMessage(data, `API error: ${response.status}`),
+      extractApiErrorMessage(data, `API error: ${status}`),
     );
   }
 
@@ -589,4 +609,113 @@ export async function register(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// ── Onboarding ────────────────────────────────────────────────────────────
+// The backend resolves the organisation from the authenticated user (JWT →
+// users.organisation_id); no organisationId is ever sent or accepted here.
+
+export interface OnboardingRecord {
+  id: string;
+  organisationId: string;
+  company: OnboardingData["company"];
+  locations: OnboardingData["locations"];
+  reporting: OnboardingData["reporting"];
+  integrations: OnboardingData["integrations"];
+  emissions: OnboardingData["emissions"];
+  valueChain: OnboardingData["valueChain"];
+  strategy: OnboardingData["strategy"];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type OnboardingStatusResult =
+  | { kind: "completed"; record: OnboardingRecord }
+  | { kind: "not-found" }
+  | { kind: "error"; message: string };
+
+/** GET /onboarding — 404 means the organisation hasn't onboarded yet. */
+export async function getOnboardingStatus(): Promise<OnboardingStatusResult> {
+  try {
+    const { status, data } = await requestJson(`/onboarding`);
+    if (status === 200 && data?.data) {
+      return { kind: "completed", record: data.data as OnboardingRecord };
+    }
+    if (status === 404) {
+      return { kind: "not-found" };
+    }
+    if (status === 401) {
+      return {
+        kind: "error",
+        message: extractApiErrorMessage(data, "Session expired. Please log in again."),
+      };
+    }
+    return {
+      kind: "error",
+      message: extractApiErrorMessage(data, `Failed to check onboarding status (${status})`),
+    };
+  } catch (err) {
+    return {
+      kind: "error",
+      message:
+        err instanceof Error
+          ? err.message
+          : "Could not reach the server to check onboarding status.",
+    };
+  }
+}
+
+export type OnboardingSubmitResult =
+  | { kind: "created"; record: OnboardingRecord }
+  | { kind: "updated"; record: OnboardingRecord }
+  | { kind: "conflict" }
+  | { kind: "error"; message: string };
+
+/** POST /onboarding — creates the profile; 409 when one already exists. */
+export async function createOnboarding(
+  payload: OnboardingData
+): Promise<OnboardingSubmitResult> {
+  const { status, data } = await requestJson(`/onboarding`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  if (status === 201 && data?.data) {
+    return { kind: "created", record: data.data as OnboardingRecord };
+  }
+  if (status === 409) {
+    return { kind: "conflict" };
+  }
+  if (status === 401) {
+    return {
+      kind: "error",
+      message: extractApiErrorMessage(data, "Session expired. Please log in again."),
+    };
+  }
+  return {
+    kind: "error",
+    message: extractApiErrorMessage(data, "Failed to save onboarding"),
+  };
+}
+
+/** PUT /onboarding — replaces the existing profile (idempotent upsert). */
+export async function updateOnboarding(
+  payload: OnboardingData
+): Promise<OnboardingSubmitResult> {
+  const { status, data } = await requestJson(`/onboarding`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  if (status === 200 && data?.data) {
+    return { kind: "updated", record: data.data as OnboardingRecord };
+  }
+  if (status === 401) {
+    return {
+      kind: "error",
+      message: extractApiErrorMessage(data, "Session expired. Please log in again."),
+    };
+  }
+  return {
+    kind: "error",
+    message: extractApiErrorMessage(data, "Failed to update onboarding"),
+  };
 }

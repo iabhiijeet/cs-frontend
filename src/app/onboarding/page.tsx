@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { OnboardingWizard } from "./_component/OnboardingWizard";
 import "./onboarding.css";
 
@@ -11,8 +12,10 @@ export const metadata: Metadata = {
 
 export default function OnboardingPage() {
   return (
-    <main className="onboarding-green bg-background">
-      <OnboardingWizard />
-    </main>
+    <ProtectedRoute>
+      <main className="onboarding-green bg-background">
+        <OnboardingWizard />
+      </main>
+    </ProtectedRoute>
   );
 }

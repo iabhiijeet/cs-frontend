@@ -4,6 +4,12 @@ import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
+import {
+  createOnboarding,
+  getOnboardingStatus,
+  updateOnboarding,
+} from "@/lib/api";
+
 import { StepSidebar } from "./StepSidebar";
 import { StepShell } from "./StepShell";
 import { ReviewScreen } from "./ReviewScreen";
@@ -31,12 +37,27 @@ import {
 } from "../_lib/onboardingPages";
 import { STEP_INDEX, validatePage } from "../_lib/onboardingValidation";
 import type { OnboardingData, OnboardingKey } from "../_types/onboarding";
+import type { OnboardingRecord } from "@/lib/api";
 
 const WELCOME_INDEX = -1;
 const REVIEW_INDEX = PAGES.length;
 const DONE_INDEX = PAGES.length + 1;
 
 type SavedState = "idle" | "saving" | "saved";
+
+// The backend record is authoritative for form values once it exists; the
+// local draft (localStorage) only contributes position and progress.
+function recordToData(record: OnboardingRecord): OnboardingData {
+  return {
+    company: record.company,
+    locations: record.locations,
+    reporting: record.reporting,
+    integrations: record.integrations,
+    emissions: record.emissions,
+    valueChain: record.valueChain,
+    strategy: record.strategy,
+  };
+}
 
 export function OnboardingWizard() {
   const router = useRouter();
@@ -77,6 +98,11 @@ export function OnboardingWizard() {
   const [touched, setTouched] = React.useState<Record<string, boolean>>({});
   const [savedState, setSavedState] = React.useState<SavedState>("idle");
   const [submitting, setSubmitting] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const [serverLoad, setServerLoad] = React.useState<
+    "loading" | "ready" | "error"
+  >("loading");
+  const [serverError, setServerError] = React.useState<string | null>(null);
 
   const currentPage =
     index >= 0 && index < PAGES.length ? PAGES[index] : null;
@@ -105,6 +131,54 @@ export function OnboardingWizard() {
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [index]);
+
+  // Load the server-side onboarding record (if any) and prefill the form.
+  // A local draft still paints instantly; the server wins once it responds.
+  const loadServerProfile = React.useCallback(async () => {
+    setServerLoad("loading");
+    const saved = loadOnboarding();
+    if (saved?.finished) {
+      // Completed in this browser already — nothing to prefill.
+      setServerLoad("ready");
+      return;
+    }
+    const result = await getOnboardingStatus();
+    if (result.kind === "completed") {
+      setData(recordToData(result.record));
+      setServerLoad("ready");
+      return;
+    }
+    if (result.kind === "not-found") {
+      // Fresh organisation: keep the local draft (if any) and start fresh.
+      setServerLoad("ready");
+      return;
+    }
+    setServerError(result.message);
+    setServerLoad("error");
+  }, []);
+
+  React.useEffect(() => {
+    void loadServerProfile();
+  }, [loadServerProfile]);
+
+  const serverBanner =
+    serverLoad === "error" ? (
+      <div
+        role="alert"
+        className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+      >
+        <span>
+          {serverError ?? "Could not load your saved onboarding data."}
+        </span>
+        <button
+          type="button"
+          onClick={() => void loadServerProfile()}
+          className="rounded-lg border border-destructive/40 px-2.5 py-1 font-medium transition-colors hover:bg-destructive/10"
+        >
+          Retry
+        </button>
+      </div>
+    ) : null;
 
   const update = React.useCallback(
     <K extends OnboardingKey>(
@@ -139,6 +213,7 @@ export function OnboardingWizard() {
     setIndex(clamped);
     setFurthest((f) => Math.max(f, clamped));
     setTouched({});
+    setSubmitError(null);
   };
 
   const handleContinue = () => {
@@ -168,11 +243,15 @@ export function OnboardingWizard() {
     goTo(target, -1);
   };
 
-  const handleComplete = () => {
+  // Submit the complete payload to the real backend. POST creates the
+  // profile; 409 means one already exists, so fall back to updating that same
+  // record (never a second row).
+  const handleComplete = async () => {
+    if (submitting) return;
     markDirty();
     setSubmitting(true);
-    window.setTimeout(() => {
-      setSubmitting(false);
+    setSubmitError(null);
+    const finish = () => {
       const allKeys = PAGES.map((p) => p.key);
       setCompletedPages(allKeys);
       saveOnboarding({
@@ -182,7 +261,37 @@ export function OnboardingWizard() {
         finished: true,
       });
       setIndex(DONE_INDEX);
-    }, 900);
+    };
+    try {
+      const created = await createOnboarding(data);
+      if (created.kind === "created") {
+        finish();
+        return;
+      }
+      if (created.kind === "error") {
+        setSubmitError(created.message);
+        return;
+      }
+      // created.kind === "conflict": a profile already exists — update it.
+      const updated = await updateOnboarding(data);
+      if (updated.kind === "updated") {
+        finish();
+        return;
+      }
+      if (updated.kind === "error") {
+        setSubmitError(updated.message);
+        return;
+      }
+      setSubmitError(
+        "Could not save your onboarding. Please try again."
+      );
+    } catch {
+      setSubmitError(
+        "Could not reach the server. Check your connection and try again."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const enterDashboard = () => {
@@ -213,6 +322,7 @@ export function OnboardingWizard() {
           savedState={savedState}
         />
         <main className="lg:pl-[300px]">
+          {serverBanner}
           <WelcomeScreen
             onStart={() =>
               goTo(Math.max(0, Math.min(furthest, PAGES.length - 1)), 1)
@@ -234,6 +344,15 @@ export function OnboardingWizard() {
           savedState={savedState}
         />
         <main className="lg:pl-[300px]">
+          {serverBanner}
+          {submitError && (
+            <div
+              role="alert"
+              className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            >
+              {submitError}
+            </div>
+          )}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key="review"
@@ -273,6 +392,7 @@ export function OnboardingWizard() {
       />
 
       <main className="lg:pl-[300px]">
+        {serverBanner}
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
             key={index}
