@@ -1,7 +1,8 @@
-import type { OnboardingData, StepId } from "../_types/onboarding";
+import type { OnboardingData, OrgType, StepId } from "../_types/onboarding";
 import { getStorageItem, setStorageItem } from "@/lib/storage";
 
 export const ONBOARDING_STORAGE_KEY = "carbonsynq_onboarding_v1";
+export const ORG_TYPE_KEY = "carbonsynq_org_type";
 
 export const EMPTY_ONBOARDING: OnboardingData = {
   company: {
@@ -15,6 +16,19 @@ export const EMPTY_ONBOARDING: OnboardingData = {
     consolidationApproach: "",
     employeeCount: "",
     annualRevenue: "",
+    fiscalYearEnd: "",
+  },
+  university: {
+    legalName: "",
+    brandName: "",
+    ugcId: "",
+    universityType: "",
+    affiliation: "",
+    naacGrade: "",
+    campusCount: "",
+    studentEnrollment: "",
+    staffCount: "",
+    website: "",
     fiscalYearEnd: "",
   },
   locations: {
@@ -101,4 +115,11 @@ export function saveOnboarding(persistence: OnboardingPersistence): void {
 export function clearOnboarding(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+}
+
+/** Read the organisation type chosen at signup. Defaults to "company". */
+export function loadOrgType(): OrgType {
+  if (typeof window === "undefined") return "company";
+  const v = window.localStorage.getItem(ORG_TYPE_KEY);
+  return v === "university" ? "university" : "company";
 }

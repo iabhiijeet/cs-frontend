@@ -76,7 +76,7 @@ export default function Topbar({ onMenu, title, subtitle }: TopbarProps) {
           <MagnifyingGlass size={15} className="pointer-events-none absolute top-1/2 left-[10px] -translate-y-1/2 text-[#a1a1aa]" />
           <input
             placeholder="Search…"
-            className="h-[34px] w-[190px] rounded-[8px] border border-black/[0.06] bg-white pr-[10px] pl-[32px] text-[13px] text-black placeholder:text-[#a1a1aa] focus:border-[#16a34a]/40 focus:outline-none"
+          className="h-[34px] w-[190px] rounded-[8px] border border-slate-200 bg-white pr-[10px] pl-[32px] text-[13px] text-slate-800 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none"
           />
         </div>
 
@@ -138,7 +138,7 @@ export default function Topbar({ onMenu, title, subtitle }: TopbarProps) {
             const t = toast.loading("Preparing export...");
             setTimeout(() => toast.success("Export successful", { id: t }), 1500);
           }}
-          className="hidden h-[34px] items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[12px] text-[13px] font-semibold text-white transition-colors hover:bg-[#15803d] md:flex"
+          className="hidden h-[34px] items-center gap-[6px] rounded-[8px] bg-slate-900 px-[12px] text-[13px] font-semibold text-white transition-colors hover:bg-slate-700 md:flex"
         >
           <DownloadSimple size={14} />
           Export

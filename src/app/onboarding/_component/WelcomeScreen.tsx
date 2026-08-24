@@ -13,9 +13,11 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import type { OrgType } from "../_types/onboarding";
 
 interface WelcomeScreenProps {
   onStart: () => void;
+  orgType?: OrgType;
 }
 
 interface StepCard {
@@ -25,7 +27,7 @@ interface StepCard {
   description: string;
 }
 
-const STEPS: StepCard[] = [
+const COMPANY_STEPS: StepCard[] = [
   {
     icon: Building2,
     step: "01",
@@ -46,6 +48,27 @@ const STEPS: StepCard[] = [
   },
 ];
 
+const UNIVERSITY_STEPS: StepCard[] = [
+  {
+    icon: Building2,
+    step: "01",
+    title: "Tell us about your institution",
+    description: "University type, enrollment and campus count anchor every report.",
+  },
+  {
+    icon: Plug,
+    step: "02",
+    title: "Map your campus operations",
+    description: "Buildings, fleet, labs and the systems where your data already lives.",
+  },
+  {
+    icon: FileCheck2,
+    step: "03",
+    title: "Configure reporting",
+    description: "GHG Protocol, BRSR, rankings and sustainability targets.",
+  },
+];
+
 const container = {
   hidden: {},
   visible: {
@@ -62,7 +85,15 @@ const item = {
   },
 };
 
-export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
+export function WelcomeScreen({ onStart, orgType = "company" }: WelcomeScreenProps) {
+  const isUniversity = orgType === "university";
+  const STEPS = isUniversity ? UNIVERSITY_STEPS : COMPANY_STEPS;
+  const headline = isUniversity
+    ? "Welcome to CarbonSynq."
+    : "Welcome to CarbonSynq.";
+  const subtitle = isUniversity
+    ? "Answer a few quick questions and we\u2019ll configure your institution\u2019s carbon accounting workspace in under five minutes."
+    : "Answer a few quick questions and we\u2019ll configure your carbon accounting workspace in under five minutes.";
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-14 text-foreground">
       <motion.div
@@ -99,15 +130,14 @@ export function WelcomeScreen({ onStart }: WelcomeScreenProps) {
           variants={item}
           className="mt-4 text-center text-[2rem] font-semibold leading-[1.12] tracking-tight text-foreground sm:text-[2.5rem]"
         >
-          Welcome to CarbonSynq.
+          {headline}
         </motion.h1>
 
         <motion.p
           variants={item}
           className="mx-auto mt-4 max-w-md text-center text-[0.9375rem] leading-6 text-muted-foreground"
         >
-          Answer a few quick questions and we&apos;ll configure your carbon
-          accounting workspace in under five minutes.
+          {subtitle}
         </motion.p>
 
         {/* Steps */}

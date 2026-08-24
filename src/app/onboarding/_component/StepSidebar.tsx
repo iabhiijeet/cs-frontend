@@ -15,6 +15,7 @@ import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 import { PAGES, STAGE_LABELS, type OnboardingPage } from "../_lib/onboardingPages";
+import type { OrgType } from "../_types/onboarding";
 
 type SavedState = "idle" | "saving" | "saved";
 
@@ -24,6 +25,12 @@ interface StepSidebarProps {
   furthest: number;
   onPageClick: (index: number) => void;
   savedState: SavedState;
+  /** Override the page list (university vs company). Defaults to PAGES. */
+  pages?: OnboardingPage[];
+  /** Override stage labels. Defaults to STAGE_LABELS. */
+  stageLabels?: string[];
+  /** Org type for label overrides. */
+  orgType?: OrgType;
 }
 
 interface StageGroup {
@@ -31,14 +38,6 @@ interface StageGroup {
   label: string;
   pages: OnboardingPage[];
 }
-
-const STAGE_GROUPS: StageGroup[] = STAGE_LABELS.map((label, stageIndex) => ({
-  stageIndex,
-  label,
-  pages: PAGES.filter((p) => p.stageIndex === stageIndex),
-})).filter((g) => g.pages.length > 0);
-
-const REVIEW_INDEX = PAGES.length;
 
 function SavedBadge({ state }: { state: SavedState }) {
   if (state === "idle") return null;
@@ -309,6 +308,9 @@ interface TimelineProps {
   completedPages: string[];
   furthest: number;
   onPageClick: (index: number) => void;
+  activePagesResolved: OnboardingPage[];
+  stageGroupsResolved: StageGroup[];
+  reviewIndex: number;
 }
 
 function StageTimeline({
@@ -316,10 +318,12 @@ function StageTimeline({
   completedPages,
   furthest,
   onPageClick,
+  stageGroupsResolved,
+  reviewIndex,
 }: TimelineProps) {
   return (
     <ol className="flex flex-col">
-      {STAGE_GROUPS.map((stage) => (
+      {stageGroupsResolved.map((stage) => (
         <StageRow
           key={stage.label}
           stage={stage}
@@ -334,7 +338,7 @@ function StageTimeline({
           <span
             className={cn(
               "flex size-6 shrink-0 items-center justify-center rounded-full border-2 bg-background",
-              currentIndex >= REVIEW_INDEX
+              currentIndex >= reviewIndex
                 ? "border-primary bg-primary text-white shadow-[0_0_0_4px_rgba(22,163,74,0.14)]"
                 : "border-border text-muted-foreground"
             )}
@@ -345,10 +349,10 @@ function StageTimeline({
         <div className="min-w-0 flex-1 pb-1">
           <button
             type="button"
-            onClick={() => onPageClick(REVIEW_INDEX)}
+            onClick={() => onPageClick(reviewIndex)}
             className={cn(
               "flex w-full items-center rounded-lg px-2 py-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring/30",
-              currentIndex === REVIEW_INDEX
+              currentIndex === reviewIndex
                 ? "bg-accent-muted/70"
                 : "hover:bg-muted/60"
             )}
@@ -356,7 +360,7 @@ function StageTimeline({
             <span
               className={cn(
                 "text-[0.8125rem] font-semibold",
-                currentIndex === REVIEW_INDEX
+                currentIndex === reviewIndex
                   ? "text-primary"
                   : "text-muted-foreground"
               )}
@@ -399,9 +403,20 @@ function BrandLink({ compact }: { compact?: boolean }) {
 }
 
 function DesktopSidebar(props: StepSidebarProps) {
+  const activePages = props.pages ?? PAGES;
+  const activeStageLabels = props.stageLabels ?? STAGE_LABELS;
+  const reviewIndex = activePages.length;
+  const stageGroupsResolved: StageGroup[] = activeStageLabels
+    .map((label, stageIndex) => ({
+      stageIndex,
+      label,
+      pages: activePages.filter((p) => p.stageIndex === stageIndex),
+    }))
+    .filter((g) => g.pages.length > 0);
+
   const progress = {
     done: props.completedPages.length,
-    total: PAGES.length,
+    total: activePages.length,
   };
   return (
     <aside className="fixed inset-y-0 left-0 z-40 hidden w-[300px] flex-col border-r border-border bg-background lg:flex">
@@ -414,7 +429,12 @@ function DesktopSidebar(props: StepSidebarProps) {
       </div>
 
       <nav className="custom-scrollbar flex-1 overflow-y-auto px-3 pb-4 pt-5">
-        <StageTimeline {...props} />
+        <StageTimeline
+          {...props}
+          activePagesResolved={activePages}
+          stageGroupsResolved={stageGroupsResolved}
+          reviewIndex={reviewIndex}
+        />
       </nav>
 
       <div className="flex shrink-0 items-center justify-between border-t border-border px-5 py-3.5">
@@ -428,22 +448,33 @@ function DesktopSidebar(props: StepSidebarProps) {
 }
 
 function MobileExperience(props: StepSidebarProps) {
+  const activePages = props.pages ?? PAGES;
+  const activeStageLabels = props.stageLabels ?? STAGE_LABELS;
+  const reviewIndex = activePages.length;
+  const stageGroupsResolved: StageGroup[] = activeStageLabels
+    .map((label, stageIndex) => ({
+      stageIndex,
+      label,
+      pages: activePages.filter((p) => p.stageIndex === stageIndex),
+    }))
+    .filter((g) => g.pages.length > 0);
+
   const [open, setOpen] = React.useState(false);
   const progress = {
     done: props.completedPages.length,
-    total: PAGES.length,
+    total: activePages.length,
   };
   const isWelcome = props.currentIndex < 0;
-  const isReview = props.currentIndex >= REVIEW_INDEX;
-  const currentPage = !isWelcome && !isReview ? PAGES[props.currentIndex] : null;
+  const isReview = props.currentIndex >= reviewIndex;
+  const currentPage = !isWelcome && !isReview ? activePages[props.currentIndex] : null;
   const stepLine = isWelcome
     ? "Welcome"
     : isReview
       ? "Review & finish"
-      : `${STAGE_LABELS[currentPage!.stageIndex]} · ${currentPage!.title}`;
+      : `${activeStageLabels[currentPage!.stageIndex]} · ${currentPage!.title}`;
   const stepSub = isReview
     ? "Review your answers"
-    : `${props.currentIndex + 1} of ${PAGES.length} pages`;
+    : `${props.currentIndex + 1} of ${activePages.length} pages`;
 
   React.useEffect(() => {
     if (!open) return;
@@ -530,6 +561,9 @@ function MobileExperience(props: StepSidebarProps) {
               <div className="custom-scrollbar flex-1 overflow-y-auto px-3 py-4">
                 <StageTimeline
                   {...props}
+                  activePagesResolved={activePages}
+                  stageGroupsResolved={stageGroupsResolved}
+                  reviewIndex={reviewIndex}
                   onPageClick={(i) => {
                     props.onPageClick(i);
                     setOpen(false);

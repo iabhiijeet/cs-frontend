@@ -14,16 +14,24 @@ import CountUp from "@/components/dashboard/CountUp";
 import { EASE } from "@/lib/animations";
 import type { TabId } from "@/components/dashboard/Sidebar";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
-import ActivityStatsPanel from "@/components/dashboard/ActivityStatsPanel";
 import { getRecommendations } from "@/lib/api";
 
-const GROUP_ICONS = {
+const GROUP_ICONS: Record<string, string> = {
   airplane: "✈",
   users: "👤",
   building: "🏢",
   truck: "🚚",
   factory: "🏭",
-} as const;
+};
+
+// Bar colors for footprint groups
+const GROUP_BAR_COLORS = [
+  "linear-gradient(90deg, #1e3a5f, #2563eb)",
+  "linear-gradient(90deg, #0e4c6e, #0891b2)",
+  "linear-gradient(90deg, #312e81, #6366f1)",
+  "linear-gradient(90deg, #134e4a, #0d9488)",
+  "linear-gradient(90deg, #1e1b4b, #8b5cf6)",
+];
 
 export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
   const { data: { KPIS, SCOPES, FOOTPRINT_GROUPS, TOTAL_12M } } = useDashboardContext();
@@ -37,24 +45,35 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
   }, []);
 
   return (
-    <div className="flex flex-col gap-[16px]">
-      <ActivityStatsPanel delay={0.05} />
+    <div className="flex flex-col gap-[20px] pb-[32px]">
 
+      {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2 xl:grid-cols-4">
         {KPIS.map((kpi: any, i: number) => (
           <KpiCard key={kpi.label} kpi={kpi} delay={0.05 + i * 0.08} />
         ))}
       </div>
 
+      {/* ── Emissions Over Time + Scope Donut ── */}
       <div className="grid grid-cols-1 gap-[16px] lg:grid-cols-3">
-        <Section title="Emissions over time" subtitle="Total CO₂e per month, broken down by scope" className="lg:col-span-2" delay={0.2}>
+        <Section
+          title="Emissions over time"
+          subtitle="Total CO₂e per month, broken down by scope"
+          className="lg:col-span-2"
+          delay={0.2}
+        >
           <AreaChart delay={0.15} />
         </Section>
-        <Section title="Scope breakdown" subtitle="Share of total footprint" delay={0.25}>
+        <Section
+          title="Scope breakdown"
+          subtitle="Share of total footprint"
+          delay={0.25}
+        >
           <Donut segments={SCOPES} centerValue={TOTAL_12M} centerLabel="Total" centerSuffix="tCO₂e" delay={0.2} />
         </Section>
       </div>
 
+      {/* ── Biggest Sources + Target ── */}
       <div className="grid grid-cols-1 gap-[16px] lg:grid-cols-2">
         <Section title="Biggest sources" subtitle="Emissions by category" delay={0.3}>
           <CategoryList delay={0.15} />
@@ -64,6 +83,7 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
         </Section>
       </div>
 
+      {/* ── Recent Activity + Footprint by Group ── */}
       <div className="grid grid-cols-1 gap-[16px] lg:grid-cols-3">
         <Section
           title="Recent activity"
@@ -73,7 +93,7 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
           action={
             <button
               onClick={() => onNavigate("reports")}
-              className="flex items-center gap-[4px] text-[12px] font-semibold text-[#15803d] transition-colors hover:text-[#0d3b2d]"
+              className="flex items-center gap-[4px] text-[12px] font-semibold text-slate-500 transition-colors hover:text-slate-900"
             >
               View all <ArrowRight size={12} weight="bold" />
             </button>
@@ -82,26 +102,21 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
           <ActivityTable delay={0.1} />
         </Section>
 
-        <motion.div
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: EASE, delay: 0.45 }}
-          className="flex flex-col rounded-[14px] border border-[#16a34a]/15 bg-[#f6fbf8] p-[20px]"
-        >
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-[13.5px] font-semibold tracking-[-0.1px] text-[#0d3b2d]">Footprint by group</p>
-              <p className="mt-[2px] text-[12px] text-[#4b6b5a]">Where emissions actually come from</p>
-            </div>
+        {/* Footprint by Group panel */}
+        <Section
+          title="Footprint by group"
+          subtitle="Where emissions actually come from"
+          delay={0.45}
+          action={
             <button
               onClick={() => onNavigate("footprint")}
-              className="flex items-center gap-[4px] text-[12px] font-semibold text-[#15803d] transition-colors hover:text-[#0d3b2d]"
+              className="flex items-center gap-[4px] text-[12px] font-semibold text-slate-500 transition-colors hover:text-slate-900"
             >
               Details <ArrowRight size={12} weight="bold" />
             </button>
-          </div>
-
-          <div className="mt-[18px] flex flex-1 flex-col justify-center gap-[13px]">
+          }
+        >
+          <div className="flex h-full flex-col justify-between gap-[16px]">
             {FOOTPRINT_GROUPS.map((g: any, i: number) => (
               <motion.button
                 key={g.key}
@@ -109,26 +124,27 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.45, ease: EASE, delay: 0.5 + i * 0.07 }}
                 onClick={() => onNavigate("footprint")}
-                className="group flex items-center gap-[10px] text-left"
+                className="group flex items-center gap-[12px] text-left"
               >
-                <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[7px] bg-white text-[13px] shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
-                  {GROUP_ICONS[g.icon as keyof typeof GROUP_ICONS]}
+                <span className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-[8px] bg-slate-100 text-[13px] shadow-sm transition-colors group-hover:bg-slate-200">
+                  {GROUP_ICONS[g.icon] ?? "📊"}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="mb-[4px] flex items-baseline justify-between gap-[8px]">
-                    <span className="truncate text-[12px] font-medium text-[#2c4a3a] transition-colors group-hover:text-black">
+                  <div className="mb-[5px] flex items-baseline justify-between gap-[8px]">
+                    <span className="truncate text-[13px] font-medium text-slate-600 transition-colors group-hover:text-slate-900">
                       {g.name}
                     </span>
-                    <span className="text-[11.5px] font-semibold tabular-nums text-[#0d3b2d]">
+                    <span className="text-[12px] font-bold tabular-nums text-slate-800">
                       <CountUp value={g.value} delay={0.55 + i * 0.07} />
                     </span>
                   </div>
-                  <div className="h-[5px] w-full overflow-hidden rounded-full bg-white">
+                  <div className="h-[5px] w-full overflow-hidden rounded-full bg-slate-100">
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${FOOTPRINT_GROUPS[0] ? (g.value / FOOTPRINT_GROUPS[0].value) * 100 : 0}%` }}
                       transition={{ duration: 1, ease: EASE, delay: 0.55 + i * 0.07 }}
-                      className="h-full rounded-full bg-gradient-to-r from-[#16a34a] to-[#4ade80]"
+                      className="h-full rounded-full"
+                      style={{ background: GROUP_BAR_COLORS[i % GROUP_BAR_COLORS.length] }}
                     />
                   </div>
                 </div>
@@ -136,53 +152,47 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
             ))}
           </div>
 
-          <div className="mt-[16px] flex items-center justify-between border-t border-[#16a34a]/15 pt-[12px]">
-            <p className="text-[11.5px] text-[#4b6b5a]">Total across groups</p>
-            <p className="text-[13px] font-semibold tabular-nums text-[#0d3b2d]">
+          <div className="mt-[18px] flex items-center justify-between border-t border-slate-100 pt-[14px]">
+            <p className="text-[11.5px] text-slate-400">Total across groups</p>
+            <p className="text-[13px] font-bold tabular-nums text-slate-900">
               <CountUp value={TOTAL_12M} suffix=" tCO₂e" delay={0.8} />
             </p>
           </div>
-        </motion.div>
+        </Section>
       </div>
 
-      <div className="grid grid-cols-1 gap-[16px] lg:grid-cols-3">
+      {/* ── Top Recommendations ── */}
+      {topRecs.length > 0 && (
         <Section
-          title="Top Recommendations"
+          title="Top recommendations"
           subtitle="High-impact actions to reduce emissions"
-          className="lg:col-span-3"
           delay={0.5}
           action={
             <button
               onClick={() => onNavigate("recommendations")}
-              className="flex items-center gap-[4px] text-[12px] font-semibold text-[#15803d] transition-colors hover:text-[#0d3b2d]"
+              className="flex items-center gap-[4px] text-[12px] font-semibold text-slate-500 transition-colors hover:text-slate-900"
             >
               View all <ArrowRight size={12} weight="bold" />
             </button>
           }
         >
-          {topRecs.length === 0 ? (
-            <div className="flex items-center justify-center py-[24px] text-[13px] text-[#71717a]">
-              No high-priority recommendations right now.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-[16px] md:grid-cols-3">
-              {topRecs.map((rec) => (
-                <button 
-                  key={rec.id} 
-                  onClick={() => onNavigate("recommendations")}
-                  className="flex flex-col gap-[8px] rounded-[10px] border border-red-200 bg-red-50 p-[16px] text-left hover:bg-red-100 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-[8px]">
-                    <span className="h-[8px] w-[8px] shrink-0 rounded-full bg-red-500" />
-                    <h4 className="text-[13px] font-semibold text-red-900 line-clamp-1">{rec.title}</h4>
-                  </div>
-                  <p className="text-[12px] text-red-800 line-clamp-2 leading-relaxed">{rec.description}</p>
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="grid grid-cols-1 gap-[14px] md:grid-cols-3">
+            {topRecs.map((rec) => (
+              <button
+                key={rec.id}
+                onClick={() => onNavigate("recommendations")}
+                className="flex flex-col gap-[8px] rounded-[12px] border border-red-100 bg-red-50 p-[16px] text-left hover:bg-red-100 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-[8px]">
+                  <span className="h-[8px] w-[8px] shrink-0 rounded-full bg-red-500" />
+                  <h4 className="text-[13px] font-semibold text-red-900 line-clamp-1">{rec.title}</h4>
+                </div>
+                <p className="text-[12px] text-red-700 line-clamp-2 leading-relaxed">{rec.description}</p>
+              </button>
+            ))}
+          </div>
         </Section>
-      </div>
+      )}
     </div>
   );
 }

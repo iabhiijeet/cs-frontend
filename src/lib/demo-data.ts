@@ -27,9 +27,9 @@ export const SCOPE2_12M = MONTHLY.reduce((acc, m) => acc + m.scope2, 0);
 export const SCOPE3_12M = MONTHLY.reduce((acc, m) => acc + m.scope3, 0);
 
 export const SCOPES = [
-  { key: "scope1", name: "Scope 1 — Direct", value: SCOPE1_12M, share: 0.12, color: "#15803d" },
-  { key: "scope2", name: "Scope 2 — Energy", value: SCOPE2_12M, share: 0.28, color: "#22c55e" },
-  { key: "scope3", name: "Scope 3 — Value chain", value: SCOPE3_12M, share: 0.6, color: "#86efac" },
+  { key: "scope1", name: "Scope 1 — Direct", value: SCOPE1_12M, share: 0.12, color: "#1e40af" },
+  { key: "scope2", name: "Scope 2 — Energy", value: SCOPE2_12M, share: 0.28, color: "#0e7490" },
+  { key: "scope3", name: "Scope 3 — Value chain", value: SCOPE3_12M, share: 0.6, color: "#6366f1" },
 ];
 
 export interface Category {

@@ -29,7 +29,10 @@ export default function SignInForm() {
         return;
       }
       setAuth(res.data.token, res.data.user);
-      router.push('/dashboard');
+      // Agar user ne abhi tak onboarding complete nahi ki (no organisationId),
+      // toh onboarding wizard dikhao; warna seedha dashboard pe jao.
+      const destination = res.data.user?.organisationId ? '/dashboard' : '/onboarding';
+      router.push(destination);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in. Try again');
       setIsPending(false);

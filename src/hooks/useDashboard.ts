@@ -1,7 +1,39 @@
 import { useState, useEffect } from 'react';
 import { getDashboardSummary, ContextError } from '../lib/api';
 import { useReportingPeriod } from './useReportingPeriod';
-import * as demoData from '../lib/demo-data';
+import {
+  MONTHLY,
+  TOTAL_12M as DEMO_TOTAL_12M,
+  SCOPE1_12M as DEMO_SCOPE1,
+  SCOPE2_12M as DEMO_SCOPE2,
+  SCOPE3_12M as DEMO_SCOPE3,
+  SCOPES,
+  CATEGORIES,
+  KPIS,
+  SCOPE_DETAILS,
+  FOOTPRINT_GROUPS,
+  ACTIVITY,
+  ACTIVITY_STATS,
+  TARGETS,
+} from '../lib/demo-data';
+
+// Plain object so all views can safely destructure it
+const DEMO_DATA = {
+  MONTHLY,
+  TOTAL_12M: DEMO_TOTAL_12M,
+  SCOPE1_12M: DEMO_SCOPE1,
+  SCOPE2_12M: DEMO_SCOPE2,
+  SCOPE3_12M: DEMO_SCOPE3,
+  SCOPES,
+  CATEGORIES: CATEGORIES ?? [],
+  KPIS,
+  SCOPE_DETAILS: SCOPE_DETAILS ?? [],
+  FOOTPRINT_GROUPS: FOOTPRINT_GROUPS ?? [],
+  ACTIVITY,
+  ACTIVITY_STATS,
+  TARGETS,
+};
+
 
 export function useDashboard() {
   const {
@@ -33,28 +65,30 @@ export function useDashboard() {
     }
 
     if (periodStatus === "empty") {
-      // No reporting periods exist for this university — a real empty state,
-      // never an invented period id.
-      setData(null);
+      // No reporting periods exist yet — show demo data so the dashboard
+      // doesn't appear blank on first login.
+      setData(DEMO_DATA);
       setError(null);
-      setFallbackUsed(false);
+      setFallbackUsed(true);
       setLoading(false);
       return;
     }
 
     if (periodStatus === "error") {
-      setData(null);
+      // Period resolution failed — still show demo data so the UI isn't blank.
+      setData(DEMO_DATA);
       setError(periodError);
-      setFallbackUsed(false);
+      setFallbackUsed(true);
       setLoading(false);
       return;
     }
 
     const effectivePeriodId = filters.reportingPeriodId || activePeriodId || "";
     if (!effectivePeriodId) {
-      setData(null);
-      setError("No reporting period is selected.");
-      setFallbackUsed(false);
+      // No period selected yet — fall back to demo data.
+      setData(DEMO_DATA);
+      setError(null);
+      setFallbackUsed(true);
       setLoading(false);
       return;
     }
@@ -66,13 +100,24 @@ export function useDashboard() {
         const response = await getDashboardSummary(undefined, effectivePeriodId);
 
         if (response.success && response.data) {
-          setData(mapBackendToFrontend(response.data));
-          setFallbackUsed(false);
+          const mapped = mapBackendToFrontend(response.data);
+          // If backend succeeded but has no emission data yet, use demo fallback
+          const isEmpty =
+            mapped.TOTAL_12M === 0 &&
+            (!mapped.ACTIVITY_STATS || mapped.ACTIVITY_STATS.total === 0);
+          if (isEmpty) {
+            console.info("Backend data is empty; showing demo data as fallback.");
+            setData(DEMO_DATA);
+            setFallbackUsed(true);
+          } else {
+            setData(mapped);
+            setFallbackUsed(false);
+          }
         } else {
           // Genuine unsuccessful backend response → resilience fallback.
           console.warn("Backend fetch returned an unsuccessful response; using demo fallback.", response.message);
           setError(response.message || "Backend returned an unsuccessful response.");
-          setData(demoData);
+          setData(DEMO_DATA);
           setFallbackUsed(true);
         }
       } catch (err: any) {
@@ -88,7 +133,7 @@ export function useDashboard() {
         // Network / backend failure → resilience fallback, clearly indicated.
         console.warn("Backend fetch failed; using demo fallback.", err);
         setError(err?.message || "Backend is unavailable.");
-        setData(demoData);
+        setData(DEMO_DATA);
         setFallbackUsed(true);
       } finally {
         setLoading(false);

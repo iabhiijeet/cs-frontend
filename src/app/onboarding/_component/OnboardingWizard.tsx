@@ -16,6 +16,7 @@ import { ReviewScreen } from "./ReviewScreen";
 import { WelcomeScreen } from "./WelcomeScreen";
 import { WorkspaceReady } from "./WorkspaceReady";
 import { CompanyIdentityStep } from "./steps/CompanyIdentityStep";
+import { UniversityIdentityStep } from "./steps/UniversityIdentityStep";
 import { LocationsOperationsStep } from "./steps/LocationsOperationsStep";
 import { ReportingComplianceStep } from "./steps/ReportingComplianceStep";
 import { DataIntegrationsStep } from "./steps/DataIntegrationsStep";
@@ -26,6 +27,7 @@ import {
   EMPTY_ONBOARDING,
   clearOnboarding,
   loadOnboarding,
+  loadOrgType,
   saveOnboarding,
 } from "../_lib/onboardingStorage";
 import {
@@ -35,13 +37,17 @@ import {
   isLastPageOfStep,
   pageIndexForStep,
 } from "../_lib/onboardingPages";
+import {
+  UNIVERSITY_PAGES,
+  UNIVERSITY_PAGE_INDEX,
+  UNIVERSITY_STAGE_LABELS,
+} from "../_lib/onboardingPagesUniversity";
 import { STEP_INDEX, validatePage } from "../_lib/onboardingValidation";
-import type { OnboardingData, OnboardingKey } from "../_types/onboarding";
+import { validateUniversityPage } from "../_lib/onboardingValidationUniversity";
+import type { OnboardingData, OnboardingKey, OrgType } from "../_types/onboarding";
 import type { OnboardingRecord } from "@/lib/api";
 
 const WELCOME_INDEX = -1;
-const REVIEW_INDEX = PAGES.length;
-const DONE_INDEX = PAGES.length + 1;
 
 type SavedState = "idle" | "saving" | "saved";
 
@@ -62,6 +68,19 @@ function recordToData(record: OnboardingRecord): OnboardingData {
 export function OnboardingWizard() {
   const router = useRouter();
 
+  // Determine which wizard to show based on org type chosen at signup
+  const [orgType] = React.useState<OrgType>(() => loadOrgType());
+
+  // Pick the right PAGES / PAGE_INDEX / STAGE_LABELS based on orgType
+  const ACTIVE_PAGES = orgType === "university" ? UNIVERSITY_PAGES : PAGES;
+  const ACTIVE_PAGE_INDEX =
+    orgType === "university" ? UNIVERSITY_PAGE_INDEX : PAGE_INDEX;
+  const ACTIVE_STAGE_LABELS =
+    orgType === "university" ? UNIVERSITY_STAGE_LABELS : STAGE_LABELS;
+
+  const REVIEW_INDEX = ACTIVE_PAGES.length;
+  const DONE_INDEX = ACTIVE_PAGES.length + 1;
+
   const [data, setData] = React.useState<OnboardingData>(() => {
     const saved = loadOnboarding();
     return saved?.data ?? EMPTY_ONBOARDING;
@@ -69,8 +88,8 @@ export function OnboardingWizard() {
   const [index, setIndex] = React.useState<number>(() => {
     const saved = loadOnboarding();
     if (saved?.finished) return DONE_INDEX;
-    if (saved?.currentPageKey && PAGE_INDEX[saved.currentPageKey] != null)
-      return PAGE_INDEX[saved.currentPageKey];
+    if (saved?.currentPageKey && ACTIVE_PAGE_INDEX[saved.currentPageKey] != null)
+      return ACTIVE_PAGE_INDEX[saved.currentPageKey];
     if (saved?.currentStep && STEP_INDEX[saved.currentStep] != null)
       return pageIndexForStep(saved.currentStep);
     return WELCOME_INDEX;
@@ -79,18 +98,18 @@ export function OnboardingWizard() {
   const [completedPages, setCompletedPages] = React.useState<string[]>(() => {
     const saved = loadOnboarding();
     if (!saved) return [];
-    if (saved.finished) return PAGES.map((p) => p.key);
+    if (saved.finished) return ACTIVE_PAGES.map((p) => p.key);
     if (saved.completedPages) return saved.completedPages;
     return (saved.completedSteps ?? []).flatMap((step) =>
-      PAGES.filter((p) => p.stepId === step).map((p) => p.key)
+      ACTIVE_PAGES.filter((p) => p.stepId === step).map((p) => p.key)
     );
   });
   const [furthest, setFurthest] = React.useState<number>(() => {
     const saved = loadOnboarding();
     if (saved?.finished) return DONE_INDEX;
     let idx: number | null = null;
-    if (saved?.currentPageKey && PAGE_INDEX[saved.currentPageKey] != null)
-      idx = PAGE_INDEX[saved.currentPageKey];
+    if (saved?.currentPageKey && ACTIVE_PAGE_INDEX[saved.currentPageKey] != null)
+      idx = ACTIVE_PAGE_INDEX[saved.currentPageKey];
     else if (saved?.currentStep && STEP_INDEX[saved.currentStep] != null)
       idx = pageIndexForStep(saved.currentStep);
     return idx != null ? idx : WELCOME_INDEX;
@@ -105,7 +124,7 @@ export function OnboardingWizard() {
   const [serverError, setServerError] = React.useState<string | null>(null);
 
   const currentPage =
-    index >= 0 && index < PAGES.length ? PAGES[index] : null;
+    index >= 0 && index < ACTIVE_PAGES.length ? ACTIVE_PAGES[index] : null;
   const currentStepId = currentPage?.stepId ?? null;
   const isWelcome = index === WELCOME_INDEX;
   const isReview = index === REVIEW_INDEX;
@@ -117,8 +136,8 @@ export function OnboardingWizard() {
     const t = window.setTimeout(() => {
       saveOnboarding({
         data,
-        currentPageKey: currentPage?.key ?? PAGES[0].key,
-        completedPages,                                                                                                                                                               
+        currentPageKey: currentPage?.key ?? ACTIVE_PAGES[0].key,
+        completedPages,
         ...(isDone ? { finished: true as const } : {}),
       });
       setSavedState("saved");
@@ -126,19 +145,17 @@ export function OnboardingWizard() {
       return () => window.clearTimeout(reset);
     }, 450);
     return () => window.clearTimeout(t);
-  }, [data, completedPages, index, currentPage?.key, isDone]);
+  }, [data, completedPages, index, currentPage?.key, isDone, ACTIVE_PAGES]);
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [index]);
 
   // Load the server-side onboarding record (if any) and prefill the form.
-  // A local draft still paints instantly; the server wins once it responds.
   const loadServerProfile = React.useCallback(async () => {
     setServerLoad("loading");
     const saved = loadOnboarding();
     if (saved?.finished) {
-      // Completed in this browser already — nothing to prefill.
       setServerLoad("ready");
       return;
     }
@@ -149,7 +166,6 @@ export function OnboardingWizard() {
       return;
     }
     if (result.kind === "not-found") {
-      // Fresh organisation: keep the local draft (if any) and start fresh.
       setServerLoad("ready");
       return;
     }
@@ -191,10 +207,11 @@ export function OnboardingWizard() {
     [markDirty]
   );
 
-  const errors = React.useMemo(
-    () => (currentPage ? validatePage(currentPage.key, data) : {}),
-    [currentPage, data]
-  );
+  const errors = React.useMemo(() => {
+    if (!currentPage) return {};
+    if (orgType === "university") return validateUniversityPage(currentPage.key, data);
+    return validatePage(currentPage.key, data);
+  }, [currentPage, data, orgType]);
 
   const err = React.useCallback(
     (field: string) =>
@@ -218,7 +235,10 @@ export function OnboardingWizard() {
 
   const handleContinue = () => {
     if (currentPage) {
-      const pageErrors = validatePage(currentPage.key, data);
+      const pageErrors = orgType === "university" 
+        ? validateUniversityPage(currentPage.key, data)
+        : validatePage(currentPage.key, data);
+      
       if (Object.keys(pageErrors).length > 0) {
         setTouched(
           Object.fromEntries(Object.keys(pageErrors).map((k) => [k, true]))
@@ -238,29 +258,28 @@ export function OnboardingWizard() {
   };
 
   const handleEdit = (pageKey: string) => {
-    const target = PAGE_INDEX[pageKey];
+    const target = ACTIVE_PAGE_INDEX[pageKey];
     if (target == null) return;
     goTo(target, -1);
   };
 
-  // Submit the complete payload to the real backend. POST creates the
-  // profile; 409 means one already exists, so fall back to updating that same
-  // record (never a second row).
   const handleComplete = async () => {
     if (submitting) return;
     markDirty();
     setSubmitting(true);
     setSubmitError(null);
+    // Onboarding poora hua — bina kisi extra screen ke seedha dashboard bhejo.
     const finish = () => {
-      const allKeys = PAGES.map((p) => p.key);
+      const allKeys = ACTIVE_PAGES.map((p) => p.key);
       setCompletedPages(allKeys);
       saveOnboarding({
         data,
-        currentPageKey: PAGES[PAGES.length - 1].key,
+        currentPageKey: ACTIVE_PAGES[ACTIVE_PAGES.length - 1].key,
         completedPages: allKeys,
         finished: true,
       });
-      setIndex(DONE_INDEX);
+      clearOnboarding();
+      router.replace("/dashboard");
     };
     try {
       const created = await createOnboarding(data);
@@ -272,7 +291,7 @@ export function OnboardingWizard() {
         setSubmitError(created.message);
         return;
       }
-      // created.kind === "conflict": a profile already exists — update it.
+      // conflict: profile already exists — update it.
       const updated = await updateOnboarding(data);
       if (updated.kind === "updated") {
         finish();
@@ -282,9 +301,7 @@ export function OnboardingWizard() {
         setSubmitError(updated.message);
         return;
       }
-      setSubmitError(
-        "Could not save your onboarding. Please try again."
-      );
+      setSubmitError("Could not save your onboarding. Please try again.");
     } catch {
       setSubmitError(
         "Could not reach the server. Check your connection and try again."
@@ -299,11 +316,17 @@ export function OnboardingWizard() {
     router.push("/dashboard");
   };
 
+  // ── Determine brand name for WorkspaceReady screen ───────────────────
+  const brandName =
+    orgType === "university"
+      ? (data.university?.brandName || data.university?.legalName || "Your Institution")
+      : (data.company.brandName || data.company.legalName);
+
   if (isDone) {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <WorkspaceReady
-          brandName={data.company.brandName || data.company.legalName}
+          brandName={brandName}
           onEnterDashboard={enterDashboard}
           onInvite={enterDashboard}
         />
@@ -320,13 +343,17 @@ export function OnboardingWizard() {
           furthest={furthest}
           onPageClick={(i) => goTo(i, i > index ? 1 : -1)}
           savedState={savedState}
+          pages={ACTIVE_PAGES}
+          stageLabels={ACTIVE_STAGE_LABELS}
+          orgType={orgType}
         />
         <main className="lg:pl-[300px]">
           {serverBanner}
           <WelcomeScreen
             onStart={() =>
-              goTo(Math.max(0, Math.min(furthest, PAGES.length - 1)), 1)
+              goTo(Math.max(0, Math.min(furthest, ACTIVE_PAGES.length - 1)), 1)
             }
+            orgType={orgType}
           />
         </main>
       </div>
@@ -342,6 +369,9 @@ export function OnboardingWizard() {
           furthest={furthest}
           onPageClick={(i) => goTo(i, -1)}
           savedState={savedState}
+          pages={ACTIVE_PAGES}
+          stageLabels={ACTIVE_STAGE_LABELS}
+          orgType={orgType}
         />
         <main className="lg:pl-[300px]">
           {serverBanner}
@@ -368,6 +398,7 @@ export function OnboardingWizard() {
                 onBack={handleBack}
                 onComplete={handleComplete}
                 submitting={submitting}
+                orgType={orgType}
               />
             </motion.div>
           </AnimatePresence>
@@ -377,8 +408,8 @@ export function OnboardingWizard() {
   }
 
   const page = currentPage!;
-  const stageLabel = STAGE_LABELS[page.stageIndex] ?? page.stepId;
-  const stepPageCount = PAGES.filter((p) => p.stepId === page.stepId).length;
+  const stageLabel = ACTIVE_STAGE_LABELS[page.stageIndex] ?? page.stepId;
+  const stepPageCount = ACTIVE_PAGES.filter((p) => p.stepId === page.stepId).length;
   const stageFirstIndex = page.index - page.substepIndex;
 
   return (
@@ -389,6 +420,9 @@ export function OnboardingWizard() {
         furthest={furthest}
         onPageClick={(i) => goTo(i, i > index ? 1 : -1)}
         savedState={savedState}
+        pages={ACTIVE_PAGES}
+        stageLabels={ACTIVE_STAGE_LABELS}
+        orgType={orgType}
       />
 
       <main className="lg:pl-[300px]">
@@ -403,7 +437,7 @@ export function OnboardingWizard() {
             transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
           >
             <StepShell
-              eyebrow={`${stageLabel} · ${index + 1} of ${PAGES.length}`}
+              eyebrow={`${stageLabel} · ${index + 1} of ${ACTIVE_PAGES.length}`}
               title={page.title}
               description={page.description}
               showBack={index > WELCOME_INDEX}
@@ -422,7 +456,17 @@ export function OnboardingWizard() {
                   ),
               }}
             >
-              {currentStepId === "company" && (
+              {/* ── Step 1: Identity ── company or university ───────── */}
+              {currentStepId === "company" && orgType === "university" && (
+                <UniversityIdentityStep
+                  data={data}
+                  update={update}
+                  err={err}
+                  touch={touch}
+                  section={page.section}
+                />
+              )}
+              {currentStepId === "company" && orgType !== "university" && (
                 <CompanyIdentityStep
                   data={data}
                   update={update}

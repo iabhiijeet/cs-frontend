@@ -11,11 +11,11 @@ export default function TargetPanel({ delay = 0 }: { delay?: number }) {
 
   if (!TARGETS || TARGETS.length < 2) {
     return (
-      <div className="flex h-full flex-col items-center justify-center border border-dashed border-black/10 rounded-[12px] bg-[#fafafa] p-6 text-center">
-        <TargetIcon size={24} className="mb-3 text-[#a1a1aa]" />
-        <p className="text-[13.5px] font-semibold text-black mb-1">No Targets Set</p>
-        <p className="text-[12px] text-[#71717a] mb-4">Establish a baseline and set targets to track progress here.</p>
-        <a href="/targets" className="rounded-full bg-black px-[12px] py-[6px] text-[12px] font-medium text-white hover:bg-black/80 transition-colors">
+      <div className="flex h-full flex-col items-center justify-center border border-dashed border-slate-200 rounded-[14px] bg-slate-50 p-6 text-center">
+        <TargetIcon size={24} className="mb-3 text-slate-300" />
+        <p className="text-[13.5px] font-semibold text-slate-800 mb-1">No Targets Set</p>
+        <p className="text-[12px] text-slate-500 mb-4">Establish a baseline and set targets to track progress here.</p>
+        <a href="/targets" className="rounded-full bg-slate-900 px-[14px] py-[6px] text-[12px] font-medium text-white hover:bg-slate-700 transition-colors">
           Set Target
         </a>
       </div>
@@ -36,46 +36,45 @@ export default function TargetPanel({ delay = 0 }: { delay?: number }) {
     : 0;
 
   const reductionPct = Math.round(((baselineVal - targetVal) / baselineVal) * 100);
+  const onTrack = reductionProgress >= 40;
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-[13.5px] font-semibold tracking-[-0.1px] text-black">{target.label.split(" ")[0]} reduction target</p>
-          <p className="mt-[2px] text-[12px] text-[#71717a]">Science-based aligned to 1.5°C</p>
-        </div>
+      <div className="mb-[14px] flex justify-end">
         <div className="flex items-center gap-[8px]">
           <a
             href="/targets"
-            className="flex items-center gap-[4px] rounded-full border border-black/10 px-[10px] py-[3px] text-[11px] font-medium text-black transition-colors hover:bg-black/5"
+            className="flex items-center gap-[4px] rounded-full border border-slate-200 px-[10px] py-[4px] text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-50"
           >
-            <PencilSimple size={12} />
+            <PencilSimple size={11} />
             Edit target
           </a>
-          <span className={`rounded-full px-[8px] py-[2px] text-[11px] font-semibold ${reductionProgress >= 100 ? "bg-green-100 text-green-700" : "bg-[#f0fdf4] text-[#15803d]"}`}>
-            {reductionProgress >= 100 ? "Target Achieved" : "On track"}
+          <span className={`rounded-full px-[9px] py-[3px] text-[11px] font-semibold ${onTrack ? "bg-teal-50 text-teal-700" : "bg-amber-50 text-amber-700"}`}>
+            {reductionProgress >= 100 ? "Target Achieved" : onTrack ? "On track" : "Needs attention"}
           </span>
         </div>
       </div>
 
-      <div className="mt-[22px] flex items-baseline gap-[8px]">
-        <p className="text-[32px] font-semibold leading-none tracking-[-1px] tabular-nums text-black">
+      <div className="mt-[24px] flex items-baseline gap-[8px]">
+        <p className="text-[36px] font-bold leading-none tracking-[-1.5px] tabular-nums text-slate-900">
           <CountUp value={reductionProgress} decimals={0} suffix="%" delay={delay + 0.2} />
         </p>
-        <p className="text-[12.5px] text-[#71717a]">of ↓{reductionPct}% target met</p>
+        <p className="text-[13px] text-slate-500">of ↓{reductionPct}% target met</p>
       </div>
 
-      <div className="mt-[26px]">
-        <div className="h-[8px] w-full overflow-hidden rounded-full bg-black/[0.045]">
+      {/* Progress bar */}
+      <div className="mt-[20px]">
+        <div className="h-[8px] w-full overflow-hidden rounded-full bg-slate-100">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${reductionProgress}%` }}
             transition={{ duration: 1.4, ease: EASE, delay: delay + 0.3 }}
-            className="h-full rounded-full bg-gradient-to-r from-[#16a34a] to-[#4ade80]"
+            className="h-full rounded-full"
+            style={{ background: "linear-gradient(90deg, #1e3a5f, #0891b2)" }}
           />
         </div>
 
-        <div className="mt-[12px] flex items-start justify-between gap-[8px]">
+        <div className="mt-[16px] flex items-start justify-between gap-[8px]">
           {TARGETS.map((tgt: any, i: number) => {
             const isComplete = TOTAL_12M <= tgt.value;
             return (
@@ -84,12 +83,12 @@ export default function TargetPanel({ delay = 0 }: { delay?: number }) {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", stiffness: 400, damping: 22, delay: delay + 0.4 + i * 0.15 }}
-                  className={`h-[10px] w-[10px] rounded-full ${isComplete ? "bg-[#16a34a]" : "bg-[#d4d4d8]"}`}
+                  className={`h-[10px] w-[10px] rounded-full border-2 ${isComplete ? "border-teal-500 bg-teal-500" : "border-slate-300 bg-white"}`}
                 />
-                <p className="mt-[8px] text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[#a1a1aa]">{tgt.label}</p>
-                <p className="text-[12.5px] font-medium tabular-nums text-black">
+                <p className="mt-[8px] text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-400">{tgt.label}</p>
+                <p className="text-[12.5px] font-semibold tabular-nums text-slate-800">
                   <CountUp value={tgt.value} delay={delay + 0.5 + i * 0.1} />
-                  <span className="text-[10.5px] text-[#a1a1aa]"> {tgt.unit}</span>
+                  <span className="text-[10.5px] font-normal text-slate-400"> {tgt.unit}</span>
                 </p>
               </div>
             );
@@ -101,11 +100,11 @@ export default function TargetPanel({ delay = 0 }: { delay?: number }) {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: EASE, delay: delay + 0.5 }}
-        className="mt-auto flex items-center gap-[8px] rounded-[10px] border border-[#16a34a]/15 bg-[#f6fbf8] px-[12px] py-[10px]"
+        className="mt-auto flex items-center gap-[10px] rounded-[10px] border border-slate-100 bg-slate-50 px-[14px] py-[10px]"
       >
-        <span className="h-[8px] w-[8px] shrink-0 rounded-full bg-[#16a34a]" />
-        <p className="text-[12px] leading-snug text-[#15803d]">
-          Current pace puts you <span className="font-semibold">{reductionProgress >= 100 ? "beyond" : reductionProgress > 0 ? "ahead of" : "behind"}</span> the baseline.
+        <span className={`h-[8px] w-[8px] shrink-0 rounded-full ${onTrack ? "bg-teal-500" : "bg-amber-400"}`} />
+        <p className="text-[12px] leading-snug text-slate-600">
+          Current pace puts you <span className="font-semibold text-slate-900">{reductionProgress >= 100 ? "beyond" : reductionProgress > 0 ? "ahead of" : "behind"}</span> the baseline trajectory.
         </p>
       </motion.div>
     </div>

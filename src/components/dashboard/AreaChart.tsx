@@ -6,9 +6,9 @@ import { EASE } from "@/lib/animations";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
 
 const SCOPE_COLORS: Record<string, string> = {
-  scope1: "#15803d",
-  scope2: "#22c55e",
-  scope3: "#86efac",
+  scope1: "#1e40af",
+  scope2: "#0e7490",
+  scope3: "#6366f1",
 };
 
 type Pt = [number, number];
@@ -114,26 +114,21 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
 
   return (
     <div className="relative">
-      <div className="flex flex-wrap items-start justify-between gap-[12px]">
-        <div>
-          <p className="text-[13.5px] font-semibold tracking-[-0.1px] text-black">Emissions over time</p>
-          <p className="mt-[2px] text-[12px] text-[#71717a]">Total CO₂e per month, broken down by scope</p>
-        </div>
-
-        <div className="flex items-center gap-[2px] rounded-[8px] border border-black/[0.06] bg-[#fafafa] p-[2px]">
+      <div className="mb-[14px] flex justify-end">
+        <div className="flex items-center gap-[2px] rounded-[8px] border border-slate-200 bg-slate-50 p-[3px]">
           {MODES.map((m) => (
             <button
               key={m.key}
               onClick={() => setMode(m.key)}
-              className={`relative rounded-[6px] px-[10px] py-[4px] text-[11.5px] font-medium transition-colors duration-200 ${
-                mode === m.key ? "text-black" : "text-[#71717a] hover:text-black"
+              className={`relative rounded-[6px] px-[10px] py-[5px] text-[11.5px] font-medium transition-colors duration-200 ${
+                mode === m.key ? "text-slate-900" : "text-slate-500 hover:text-slate-900"
               }`}
             >
               {mode === m.key && (
                 <motion.span
                   layoutId="area-mode"
                   transition={{ type: "spring", stiffness: 500, damping: 38 }}
-                  className="absolute inset-0 rounded-[6px] border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.06)]"
+                  className="absolute inset-0 rounded-[6px] border border-slate-200 bg-white shadow-[0_1px_3px_rgba(15,23,42,0.06)]"
                 />
               )}
               <span className="relative z-10">{m.label}</span>
@@ -153,16 +148,16 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
           >
             <defs>
               <linearGradient id="grad-s1" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#15803d" stopOpacity="0.9" />
-                <stop offset="100%" stopColor="#15803d" stopOpacity="0.4" />
+                <stop offset="0%" stopColor="#1e40af" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#1e40af" stopOpacity="0.2" />
               </linearGradient>
               <linearGradient id="grad-s2" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22c55e" stopOpacity="0.85" />
-                <stop offset="100%" stopColor="#22c55e" stopOpacity="0.25" />
+                <stop offset="0%" stopColor="#0e7490" stopOpacity="0.75" />
+                <stop offset="100%" stopColor="#0e7490" stopOpacity="0.15" />
               </linearGradient>
               <linearGradient id="grad-s3" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#86efac" stopOpacity="0.85" />
-                <stop offset="100%" stopColor="#86efac" stopOpacity="0.05" />
+                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.6" />
+                <stop offset="100%" stopColor="#6366f1" stopOpacity="0.05" />
               </linearGradient>
               <linearGradient id="grad-single" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={singleColor} stopOpacity="0.25" />
@@ -222,7 +217,7 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
               <motion.path
                 d={totalPath}
                 fill="none"
-                stroke="#15803d"
+                stroke="#1e40af"
                 strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -239,7 +234,7 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
                 y={h - 8}
                 textAnchor="middle"
                 fontSize="10.5"
-                fill={hover === i ? "#15803d" : "#a1a1aa"}
+                fill={hover === i ? "#1e40af" : "#a1a1aa"}
                 fontWeight={hover === i ? 600 : 400}
                 fontFamily="inherit"
               >
@@ -263,7 +258,7 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
                   cy={mode === "stacked" ? y(cum3[hover]) : y(single![hover])}
                   r="4.5"
                   fill="#fff"
-                  stroke="#15803d"
+                  stroke="#1e40af"
                   strokeWidth="2"
                 />
               </g>

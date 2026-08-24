@@ -54,7 +54,7 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#fafafa]">
+      <div className="flex min-h-dvh items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4 text-[#71717a]">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-black/10 border-t-black" />
           <p className="text-sm font-medium">Loading your footprint data...</p>
@@ -64,15 +64,25 @@ function DashboardContent() {
   }
 
   if (error && !data) {
+    const isMissingOrg = error.includes("missing its organisation");
+    const handleAction = () => {
+      if (isMissingOrg) {
+        const orgType = localStorage.getItem('carbonsynq_org_type');
+        window.location.href = orgType === 'university' ? '/university-intake' : '/onboarding';
+      } else {
+        window.location.reload();
+      }
+    };
+
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[#fafafa]">
         <div className="flex flex-col items-center gap-4 text-red-500">
           <p className="text-sm font-medium">Error loading data: {error}</p>
           <button 
             className="rounded bg-black px-4 py-2 text-sm text-white" 
-            onClick={() => window.location.reload()}
+            onClick={handleAction}
           >
-            Retry
+            {isMissingOrg ? "Complete Onboarding" : "Retry"}
           </button>
         </div>
       </div>
@@ -80,7 +90,7 @@ function DashboardContent() {
   }
 
   return (
-    <div className="flex min-h-dvh bg-[#fafafa]">
+    <div className="flex min-h-dvh bg-slate-50">
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={tab} onChange={setTab} />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -89,23 +99,14 @@ function DashboardContent() {
         <main className="flex-1 px-[20px] py-[24px] md:px-[32px]">
           <div className="mx-auto flex max-w-[1240px] flex-col">
             {fallbackUsed && (
-              <div className="mb-[12px] flex items-center gap-[8px] rounded-[8px] border border-orange-200 bg-orange-50 px-[12px] py-[8px] text-[12px] font-medium text-orange-800">
-                Showing demo data — live backend data is currently unavailable{error ? ` (${error})` : ""}.
+              <div className="mb-[14px] flex items-center gap-[8px] rounded-[10px] border border-blue-100 bg-blue-50 px-[14px] py-[10px] text-[12px] font-medium text-blue-700">
+                <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-blue-400" />
+                Showing demo data — no emission data has been imported yet{error ? ` (${error})` : ""}.
               </div>
             )}
             <DashboardFilterBar />
 
-            {(!data || (data.TOTAL_12M === 0 && data.ACTIVITY_STATS.total === 0)) ? (
-              <div className="mt-[40px] flex flex-col items-center justify-center text-center p-[40px] border border-black/[0.08] rounded-[12px] bg-white">
-                <div className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-black/5 mb-[16px]">
-                  <Database size={24} className="text-[#a1a1aa]" />
-                </div>
-                <h3 className="text-[16px] font-semibold text-black mb-[4px]">No emission data available</h3>
-                <p className="text-[13px] text-[#71717a] max-w-[280px]">
-                  No emission data or activities found for this reporting period. Please import data or change your filters.
-                </p>
-              </div>
-            ) : (
+            {data ? (
               <AnimatePresence mode="wait">
                 <motion.div
                   key={tab}
@@ -124,6 +125,16 @@ function DashboardContent() {
                   {tab === "settings" && <Placeholder tab={tab} />}
                 </motion.div>
               </AnimatePresence>
+            ) : (
+              <div className="mt-[40px] flex flex-col items-center justify-center text-center p-[40px] border border-black/[0.08] rounded-[12px] bg-white">
+                <div className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-black/5 mb-[16px]">
+                  <Database size={24} className="text-[#a1a1aa]" />
+                </div>
+                <h3 className="text-[16px] font-semibold text-black mb-[4px]">No reporting period found</h3>
+                <p className="text-[13px] text-[#71717a] max-w-[280px]">
+                  Please set up a reporting period in Settings to get started.
+                </p>
+              </div>
             )}
           </div>
         </main>

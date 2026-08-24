@@ -346,3 +346,36 @@ export function pageSummary(
       return [];
   }
 }
+
+export function universityPageSummary(
+  pageKey: string,
+  data: OnboardingData
+): SummaryItem[] {
+  const u = data.university;
+  if (pageKey === "company-identity" && u) {
+    return [
+      { label: "Legal name", value: u.legalName },
+      { label: "Brand name", value: u.brandName },
+      { label: "UGC / AICTE ID", value: u.ugcId },
+      { label: "Affiliation", value: u.affiliation },
+      { label: "NAAC Grade", value: u.naacGrade },
+      { label: "Website", value: u.website },
+    ];
+  }
+  if (pageKey === "company-organization" && u) {
+    return [
+      { label: "University Type", value: u.universityType ? u.universityType.charAt(0).toUpperCase() + u.universityType.slice(1) : "" },
+    ];
+  }
+  if (pageKey === "company-financials" && u) {
+    return [
+      { label: "Campuses", value: u.campusCount },
+      { label: "Students", value: u.studentEnrollment },
+      { label: "Staff", value: u.staffCount },
+      { label: "Fiscal year end", value: u.fiscalYearEnd },
+    ];
+  }
+  
+  // For all other pages, fallback to standard pageSummary because they share the same structure.
+  return pageSummary(pageKey, data);
+}

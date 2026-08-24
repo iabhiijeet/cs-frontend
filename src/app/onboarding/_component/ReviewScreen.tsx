@@ -7,8 +7,9 @@ import { ArrowLeft, ArrowRight, Check, PencilLine, Sparkles } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PAGES, STAGE_LABELS } from "../_lib/onboardingPages";
-import { pageSummary } from "../_lib/onboardingSummaries";
-import type { OnboardingData } from "../_types/onboarding";
+import { UNIVERSITY_PAGES, UNIVERSITY_STAGE_LABELS } from "../_lib/onboardingPagesUniversity";
+import { pageSummary, universityPageSummary } from "../_lib/onboardingSummaries";
+import type { OnboardingData, OrgType } from "../_types/onboarding";
 
 interface ReviewScreenProps {
   data: OnboardingData;
@@ -17,6 +18,7 @@ interface ReviewScreenProps {
   onBack: () => void;
   onComplete: () => void;
   submitting: boolean;
+  orgType?: OrgType;
 }
 
 interface StageGroup {
@@ -25,11 +27,7 @@ interface StageGroup {
   pages: typeof PAGES;
 }
 
-const GROUPS: StageGroup[] = STAGE_LABELS.map((label, stageIndex) => ({
-  stageIndex,
-  label,
-  pages: PAGES.filter((p) => p.stageIndex === stageIndex),
-})).filter((g) => g.pages.length > 0);
+// Removed static GROUPS constant since it depends on orgType now.
 
 export function ReviewScreen({
   data,
@@ -38,8 +36,18 @@ export function ReviewScreen({
   onBack,
   onComplete,
   submitting,
+  orgType = "company",
 }: ReviewScreenProps) {
   const completedCount = completedPages.length;
+  
+  const activePages = orgType === "university" ? UNIVERSITY_PAGES : PAGES;
+  const activeStageLabels = orgType === "university" ? UNIVERSITY_STAGE_LABELS : STAGE_LABELS;
+  
+  const groups: StageGroup[] = activeStageLabels.map((label, stageIndex) => ({
+    stageIndex,
+    label,
+    pages: activePages.filter((p) => p.stageIndex === stageIndex),
+  })).filter((g) => g.pages.length > 0);
 
   return (
     <div className="mx-auto w-full max-w-[760px] px-4 pb-40 pt-10 sm:px-6 sm:pt-14">
@@ -51,13 +59,13 @@ export function ReviewScreen({
           Looks good so far
         </h1>
         <p className="mt-3 max-w-xl text-[0.9375rem] leading-6 text-muted-foreground">
-          You&apos;ve completed {completedCount} of {PAGES.length} pages. Review each
+          You&apos;ve completed {completedCount} of {activePages.length} pages. Review each
           section and jump back to any page to refine your answers.
         </p>
       </header>
 
       <div className="space-y-10">
-        {GROUPS.map((group, gi) => {
+        {groups.map((group, gi) => {
           const groupDone = group.pages.filter((p) =>
             completedPages.includes(p.key)
           ).length;
@@ -84,7 +92,9 @@ export function ReviewScreen({
 
               <div className="space-y-3">
                 {group.pages.map((page, pi) => {
-                  const summary = pageSummary(page.key, data);
+                  const summary = orgType === "university"
+                    ? universityPageSummary(page.key, data)
+                    : pageSummary(page.key, data);
                   const filled = summary.some((s) => s.value.trim() !== "");
                   const isComplete = completedPages.includes(page.key);
                   return (

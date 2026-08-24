@@ -1,3 +1,5 @@
+export type OrgType = "company" | "university";
+
 export interface CompanyIdentity {
   legalName: string;
   brandName: string;
@@ -9,6 +11,20 @@ export interface CompanyIdentity {
   consolidationApproach: string;
   employeeCount: string;
   annualRevenue: string;
+  fiscalYearEnd: string;
+}
+
+export interface UniversityIdentity {
+  legalName: string;          // Legal registered name
+  brandName: string;          // Common/display name
+  ugcId: string;              // UGC / AICTE registration ID
+  universityType: string;     // Central | State | Deemed | Private | Autonomous
+  affiliation: string;        // Affiliated board / regulatory body
+  naacGrade: string;          // NAAC Grade (A++, A+, A, B++, etc.) — optional
+  campusCount: string;        // Number of campuses
+  studentEnrollment: string;  // Total students
+  staffCount: string;         // Total faculty + staff
+  website: string;
   fiscalYearEnd: string;
 }
 
@@ -82,6 +98,7 @@ export interface StrategyTeam {
 
 export interface OnboardingData {
   company: CompanyIdentity;
+  university?: UniversityIdentity;
   locations: LocationsOperations;
   reporting: ReportingCompliance;
   integrations: DataIntegrations;

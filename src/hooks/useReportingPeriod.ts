@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { fetchAPI } from "@/lib/api";
 
@@ -34,6 +35,7 @@ const PERIOD_ORG_KEY = "reportingPeriodOrgId";
  */
 export function useReportingPeriod(): ReportingPeriodState {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const router = useRouter();
   const [state, setState] = useState<ReportingPeriodState>({
     periods: [],
     activePeriodId: null,
@@ -46,17 +48,20 @@ export function useReportingPeriod(): ReportingPeriodState {
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated || !organisationId) {
-      // Authenticated but with no organisation: a broken session that must
-      // terminate in an explicit error, never a silent idle (which useDashboard
-      // treats as loading forever). Logged-out remains "idle" for ProtectedRoute.
+      // Authenticated but with no organisation: redirect to complete onboarding
+      // instead of showing a dead-end error.
       const authBroken = isAuthenticated && !organisationId;
+      if (authBroken) {
+        const orgType = typeof window !== "undefined"
+          ? localStorage.getItem("carbonsynq_org_type")
+          : null;
+        router.replace(orgType === "university" ? "/university-intake" : "/onboarding");
+        return;
+      }
       setState((s) => ({
         ...s,
-        status: authBroken ? "error" : "idle",
+        status: "idle",
         activePeriodId: null,
-        error: authBroken
-          ? "Your session is missing its organisation — sign in again to initialize it."
-          : s.error,
       }));
       return;
     }
