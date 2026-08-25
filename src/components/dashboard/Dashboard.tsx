@@ -90,8 +90,16 @@ function DashboardContent() {
   }
 
   return (
-    <div className="flex min-h-dvh bg-slate-50">
-      <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={tab} onChange={setTab} />
+    <div className="flex min-h-dvh bg-slate-50 relative overflow-hidden">
+      {/* ── Premium Atmospheric Background ── */}
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute -left-[10%] -top-[10%] h-[50%] w-[50%] rounded-full bg-indigo-400/10 blur-[120px]" />
+        <div className="absolute -right-[10%] top-[20%] h-[40%] w-[40%] rounded-full bg-teal-400/10 blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[20%] h-[40%] w-[50%] rounded-full bg-blue-400/10 blur-[120px]" />
+      </div>
+
+      <div className="relative z-10 flex w-full">
+        <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={tab} onChange={setTab} />
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenu={() => setMenuOpen(true)} title={meta.title} subtitle={meta.subtitle} />
@@ -138,6 +146,7 @@ function DashboardContent() {
             )}
           </div>
         </main>
+      </div>
       </div>
     </div>
   );

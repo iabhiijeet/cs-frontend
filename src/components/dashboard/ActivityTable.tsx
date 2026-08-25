@@ -36,11 +36,11 @@ export default function ActivityTable({ delay = 0 }: { delay?: number }) {
           View all <ArrowRight size={12} weight="bold" />
         </button>
       </div>
-      <div className="mt-[16px] flex-1 overflow-x-auto">
+      <div className="mt-[16px] flex-1 overflow-x-auto pb-[60px]">
         {hasData ? (
           <table className="w-full min-w-[560px] border-collapse">
             <thead>
-              <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400">
+              <tr className="text-left text-[11.5px] font-semibold uppercase tracking-[0.06em] text-slate-500">
                 <th className="pb-[10px] pr-[16px] font-semibold">Source</th>
                 <th className="pb-[10px] pr-[16px] font-semibold">Category</th>
                 <th className="pb-[10px] pr-[16px] font-semibold">Scope</th>
@@ -63,20 +63,23 @@ export default function ActivityTable({ delay = 0 }: { delay?: number }) {
                     whileHover={{ backgroundColor: "rgba(15,23,42,0.02)" }}
                     className="group border-t border-slate-100 cursor-default relative"
                   >
-                    <td className="py-[13px] pr-[16px]">
-                      <p className="text-[13px] font-semibold text-slate-800">{row.source}</p>
-                      <p className="text-[11px] text-slate-400">Auto-synced 2h ago</p>
+                    <td className="py-[14px] pr-[16px]">
+                      <p className="text-[14px] font-semibold text-slate-800">{row.source}</p>
+                      <div className="mt-[2px] flex items-center gap-[4px] text-[11.5px] text-slate-500">
+                        <span className="h-[6px] w-[6px] rounded-full bg-emerald-500 shadow-[0_0_0_2px_rgba(16,185,129,0.2)]"></span>
+                        Auto-synced 2h ago
+                      </div>
                     </td>
-                    <td className="py-[13px] pr-[16px] text-[12.5px] text-slate-500">{row.type}</td>
-                    <td className="py-[13px] pr-[16px]">
-                      <span className="rounded-[6px] border border-slate-200 bg-slate-50 px-[7px] py-[2px] text-[10.5px] font-semibold text-slate-600">
+                    <td className="py-[14px] pr-[16px] text-[13px] text-slate-600">{row.type}</td>
+                    <td className="py-[14px] pr-[16px]">
+                      <span className="rounded-[8px] border border-slate-200 bg-slate-50 px-[8px] py-[3px] text-[11.5px] font-semibold text-slate-600">
                         {row.scope}
                       </span>
                     </td>
-                    <td className="py-[13px] pr-[16px] text-right text-[13px] font-bold text-slate-900 tabular-nums">
+                    <td className="py-[14px] pr-[16px] text-right text-[14px] font-bold text-slate-900 tabular-nums">
                       {row.value}
                     </td>
-                    <td className="py-[13px]">
+                    <td className="py-[14px]">
                       <span className={`inline-flex items-center gap-[5px] rounded-full border px-[8px] py-[3px] text-[11px] font-medium ${st.cls}`}>
                         <Icon size={11} weight="fill" />
                         {row.status}

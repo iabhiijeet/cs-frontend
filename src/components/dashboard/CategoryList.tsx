@@ -21,12 +21,12 @@ export default function CategoryList({ delay = 0 }: { delay?: number }) {
   ];
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex flex-col">
       <div className="mb-[4px] flex justify-end">
         <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-slate-400">tCO₂e</span>
       </div>
 
-      <div className="flex flex-1 flex-col justify-between gap-[16px]">
+      <div className="flex flex-col gap-[20px]">
         {CATEGORIES.map((c: any, i: number) => {
           const bar = BAR_COLORS[i % BAR_COLORS.length];
           return (

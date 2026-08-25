@@ -11,17 +11,17 @@ export default function DashboardFilterBar() {
   }));
 
   return (
-    <div className="flex flex-wrap items-center gap-[12px] rounded-[12px] border border-black/[0.08] bg-white p-[16px] shadow-[0_1px_3px_rgba(0,0,0,0.02)] mb-[24px]">
-      <div className="flex items-center gap-[8px]">
+    <div className="flex flex-wrap items-center gap-[12px] rounded-[20px] border border-white/60 bg-white/70 backdrop-blur-2xl p-[16px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-[24px]">
+      <div className="flex items-center gap-[8px] pl-[8px]">
         <span className="text-[12px] font-semibold text-[#71717a] uppercase tracking-wide">Filters</span>
       </div>
 
-      <div className="h-[24px] w-[1px] bg-black/[0.08] mx-[4px]"></div>
+      <div className="h-[24px] w-[1px] bg-slate-200 mx-[4px]"></div>
 
       {/* Reporting Period — functional; drives /dashboard/summary */}
       <div className="flex flex-col gap-[4px]">
         <select
-          className="rounded-[6px] border border-black/[0.1] bg-white px-[10px] py-[6px] text-[13px] text-black outline-none focus:border-black focus:ring-1 focus:ring-black"
+          className="rounded-[8px] border border-slate-200 bg-white px-[12px] py-[6px] text-[13px] font-medium text-slate-800 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400"
           value={filters.reportingPeriodId}
           onChange={(e) => setFilters((prev: any) => ({ ...prev, reportingPeriodId: e.target.value }))}
         >
@@ -39,7 +39,7 @@ export default function DashboardFilterBar() {
           <select
             key={label}
             disabled
-            className="rounded-[6px] border border-black/[0.1] bg-white px-[10px] py-[6px] text-[13px] text-[#a1a1aa] outline-none cursor-not-allowed"
+            className="rounded-[8px] border border-slate-200 bg-slate-50 px-[12px] py-[6px] text-[13px] font-medium text-slate-400 outline-none cursor-not-allowed"
           >
             <option>{label}</option>
           </select>
