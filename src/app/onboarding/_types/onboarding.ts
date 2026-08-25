@@ -96,6 +96,39 @@ export interface StrategyTeam {
   contactEmail: string;
 }
 
+export interface PhysicalFloor {
+  name: string;
+  code?: string;
+  floorNumber?: number;
+  areaSqm?: number;
+  occupancy?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface PhysicalBuilding {
+  name: string;
+  code?: string;
+  buildingType?: string;
+  areaSqm?: number;
+  occupancy?: number;
+  metadata?: Record<string, any>;
+  floors?: PhysicalFloor[];
+}
+
+export interface PhysicalCampus {
+  name: string;
+  code?: string;
+  city?: string;
+  region?: string;
+  country?: string;
+  metadata?: Record<string, any>;
+  buildings?: PhysicalBuilding[];
+}
+
+export interface PhysicalHierarchy {
+  campuses: PhysicalCampus[];
+}
+
 export interface OnboardingData {
   company: CompanyIdentity;
   university?: UniversityIdentity;
@@ -105,9 +138,11 @@ export interface OnboardingData {
   emissions: EmissionsProfile;
   valueChain: ValueChain;
   strategy: StrategyTeam;
+  physicalHierarchy?: PhysicalHierarchy;
+  intakeRaw?: Record<string, any>;
 }
 
-export type OnboardingKey = keyof OnboardingData;
+export type OnboardingKey = "company" | "university" | "locations" | "reporting" | "integrations" | "emissions" | "valueChain" | "strategy";
 
 export type StepId =
   | "company"

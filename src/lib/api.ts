@@ -619,12 +619,15 @@ export interface OnboardingRecord {
   id: string;
   organisationId: string;
   company: OnboardingData["company"];
+  university?: OnboardingData["university"];
   locations: OnboardingData["locations"];
   reporting: OnboardingData["reporting"];
   integrations: OnboardingData["integrations"];
   emissions: OnboardingData["emissions"];
   valueChain: OnboardingData["valueChain"];
   strategy: OnboardingData["strategy"];
+  physicalHierarchy?: OnboardingData["physicalHierarchy"];
+  intakeRaw?: OnboardingData["intakeRaw"];
   createdAt: string;
   updatedAt: string;
 }

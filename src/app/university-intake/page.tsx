@@ -111,26 +111,132 @@ export default function UniversityIntake() {
   const submitForm = async () => {
     setShowStamp(true);
     try {
+      // 1. Build Physical Hierarchy (Campus -> Building -> Floor)
+      const campusName = state.campusName?.trim() || "Main Campus";
+      const campusCode = state.campusCode?.trim() || "MAIN-01";
+
+      const mappedBuildings = (state.buildings || []).map((b: any, bIdx: number) => {
+        const bName = b.name?.trim() || `Building ${bIdx + 1}`;
+        const bCode = b.code?.trim() || `BLD-${String(bIdx + 1).padStart(2, "0")}`;
+
+        const mappedFloors = (b.floors || []).map((f: any, fIdx: number) => {
+          const fName = f.label?.trim() || (fIdx === 0 ? "Ground Floor" : `Floor ${fIdx}`);
+          const fCode = f.code?.trim() || (fIdx === 0 ? "GF" : `F${fIdx}`);
+
+          return {
+            name: fName,
+            code: fCode,
+            floorNumber: f.floorNumber != null ? Number(f.floorNumber) : fIdx,
+            areaSqm: f.area ? parseFloat(f.area) : undefined,
+            occupancy: f.occupancy ? parseInt(f.occupancy, 10) : undefined,
+            metadata: {
+              acCount: f.acCount || undefined,
+              acTonnage: f.acTonnage || undefined,
+              acRefrigerant: f.acRefrigerant || undefined,
+              fridgeCount: f.fridgeCount || undefined,
+              geyserCount: f.geyserCount || undefined,
+            },
+          };
+        });
+
+        return {
+          name: bName,
+          code: bCode,
+          buildingType: b.type || "Academic",
+          areaSqm: b.area ? parseFloat(b.area) : undefined,
+          occupancy: b.occupancy ? parseInt(b.occupancy, 10) : undefined,
+          metadata: {
+            kwhMonthly: b.kwh || undefined,
+            hasDG: !!b.hasDG,
+            dgCapacity: b.dgCapacity || undefined,
+            dgFuel: b.dgFuel || undefined,
+            dgLiters: b.dgLiters || undefined,
+            hasChiller: !!b.hasChiller,
+            chillerRefrigerant: b.chillerRefrigerant || undefined,
+            chillerCharge: b.chillerCharge || undefined,
+            hasSolar: !!b.hasSolar,
+            solarCapacity: b.solarCapacity || undefined,
+            hasBoiler: !!b.hasBoiler,
+            boilerFuel: b.boilerFuel || undefined,
+            boilerCapacity: b.boilerCapacity || undefined,
+          },
+          floors: mappedFloors,
+        };
+      });
+
+      const physicalHierarchy = {
+        campuses: [
+          {
+            name: campusName,
+            code: campusCode,
+            city: state.city || undefined,
+            region: state.region || undefined,
+            country: state.country || "India",
+            metadata: {
+              granularity: state.granularity || "campus",
+              campusCount: state.campusCount || "1",
+              reportingYear: state.year || "2025-26",
+            },
+            buildings: mappedBuildings,
+          },
+        ],
+      };
+
+      // 2. Build full OnboardingData payload
+      const totalBuildingArea = (state.buildings || []).reduce((acc, b) => acc + (parseFloat(b.area) || 0), 0);
+
       const payload = {
         ...EMPTY_ONBOARDING,
+        company: {
+          ...EMPTY_ONBOARDING.company,
+          legalName: state.instName?.trim() || "University / Institution",
+          brandName: state.instName?.trim() || "University / Institution",
+          industry: "Higher Education / University",
+          fiscalYearEnd: state.year || "2025-26",
+        },
         university: {
-          legalName: state.instName,
-          brandName: state.instName,
+          legalName: state.instName?.trim() || "University / Institution",
+          brandName: state.instName?.trim() || "University / Institution",
           ugcId: "",
-          universityType: "",
-          affiliation: "",
+          universityType: "University",
+          affiliation: state.region || "",
           naacGrade: "",
-          campusCount: state.campusCount,
+          campusCount: state.campusCount || "1",
           studentEnrollment: "",
           staffCount: "",
           website: "",
-          fiscalYearEnd: state.year,
+          fiscalYearEnd: state.year || "2025-26",
+        },
+        locations: {
+          ...EMPTY_ONBOARDING.locations,
+          facilityCount: state.campusCount || "1",
+          countries: [state.country || "India"],
+          facilityTypes: ["Educational / University Campus"],
+          ownershipStatus: "own",
+          floorArea: totalBuildingArea > 0 ? String(totalBuildingArea) : "",
+          vehicles: state.hasFleet ? String(state.fleetCount || "") : "",
+          onSiteEnergy: [
+            state.renewable ? "solar" : "",
+            state.hasDG ? "diesel_generator" : "",
+          ].filter(Boolean),
+        },
+        emissions: {
+          ...EMPTY_ONBOARDING.emissions,
+          scope1Fuels: [
+            state.hasDG ? "Diesel" : "",
+            state.hasLPG ? "LPG" : "",
+          ].filter(Boolean),
+          refrigerants: [state.refrigerantType || (state.acCount ? "R-32" : "")].filter(Boolean),
+          electricitySource: state.electricityKwh ? `${state.electricityKwh} kWh/yr` : "",
+          recs: state.renewable ? `${state.renewablePct || "0"}%` : "",
         },
         strategy: {
           ...EMPTY_ONBOARDING.strategy,
-          primaryContact: state.contactRole,
-          contactEmail: state.contactEmail,
-        }
+          primaryContact: state.contactRole || "Sustainability Officer",
+          contactEmail: state.contactEmail || "",
+        },
+        physicalHierarchy,
+        intakeRaw: state,
       };
 
       let result = await createOnboarding(payload);
@@ -149,8 +255,6 @@ export default function UniversityIntake() {
         }
       } else {
         console.error("Failed to create/update onboarding", result);
-        // We still let it redirect to dashboard in case the backend just failed locally
-        // but maybe we should show an error? For now, we will proceed so the user is not completely stuck.
       }
     } catch (err) {
       console.error("Failed to submit intake", err);

@@ -268,23 +268,76 @@ export function OnboardingWizard() {
     markDirty();
     setSubmitting(true);
     setSubmitError(null);
+
+    // Build payload ensuring physicalHierarchy is always populated
+    const payloadWithHierarchy: OnboardingData = {
+      ...data,
+      physicalHierarchy: data.physicalHierarchy || {
+        campuses: [
+          {
+            name:
+              orgType === "university"
+                ? data.university?.brandName || data.university?.legalName || "Main Campus"
+                : data.company.brandName || data.company.legalName || "Headquarters",
+            code: "MAIN-01",
+            country: data.locations.countries?.[0] || "India",
+            metadata: {
+              facilityCount: data.locations.facilityCount,
+              facilityTypes: data.locations.facilityTypes,
+              floorArea: data.locations.floorArea,
+            },
+            buildings: [
+              {
+                name: "Main Facility",
+                code: "BLD-01",
+                buildingType: data.locations.facilityTypes?.[0] || "Office / Facility",
+                floors: [
+                  {
+                    name: "Ground Floor",
+                    code: "GF",
+                    floorNumber: 0,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+
     // Onboarding poora hua — bina kisi extra screen ke seedha dashboard bhejo.
-    const finish = () => {
+    const finish = (record?: OnboardingRecord) => {
       const allKeys = ACTIVE_PAGES.map((p) => p.key);
       setCompletedPages(allKeys);
       saveOnboarding({
-        data,
+        data: payloadWithHierarchy,
         currentPageKey: ACTIVE_PAGES[ACTIVE_PAGES.length - 1].key,
         completedPages: allKeys,
         finished: true,
       });
+
+      // Update session with organisationId if returned
+      if (record?.organisationId && typeof window !== "undefined") {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            parsed.organisationId = record.organisationId;
+            localStorage.setItem("user", JSON.stringify(parsed));
+          } catch (e) {
+            // Ignore parse error
+          }
+        }
+      }
+
       clearOnboarding();
       router.replace("/dashboard");
     };
+
     try {
-      const created = await createOnboarding(data);
+      const created = await createOnboarding(payloadWithHierarchy);
       if (created.kind === "created") {
-        finish();
+        finish(created.record);
         return;
       }
       if (created.kind === "error") {
@@ -292,9 +345,9 @@ export function OnboardingWizard() {
         return;
       }
       // conflict: profile already exists — update it.
-      const updated = await updateOnboarding(data);
+      const updated = await updateOnboarding(payloadWithHierarchy);
       if (updated.kind === "updated") {
-        finish();
+        finish(updated.record);
         return;
       }
       if (updated.kind === "error") {

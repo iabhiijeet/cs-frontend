@@ -11,6 +11,7 @@ import Category from "@/components/dashboard/views/Category";
 import Scope from "@/components/dashboard/views/Scope";
 import Placeholder from "@/components/dashboard/views/Placeholder";
 import ReportsView from "@/components/dashboard/views/ReportsView";
+import ActivityDataView from "@/components/dashboard/views/ActivityDataView";
 import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
 import { EASE } from "@/lib/animations";
 import type { TabId } from "@/components/dashboard/Sidebar";
@@ -129,8 +130,16 @@ function DashboardContent() {
                   {tab === "scope1" && <Scope scope={"scope1" as ScopeDetail["key"]} />}
                   {tab === "scope2" && <Scope scope={"scope2" as ScopeDetail["key"]} />}
                   {tab === "scope3" && <Scope scope={"scope3" as ScopeDetail["key"]} />}
-                  {(tab === "reports") && <ReportsView />}
-                  {tab === "settings" && <Placeholder tab={tab} />}
+                  {tab === "reports" && <ReportsView />}
+                  {tab === "activity-data" && <ActivityDataView />}
+                  {tab !== "overview" &&
+                    tab !== "footprint" &&
+                    tab !== "category" &&
+                    tab !== "scope1" &&
+                    tab !== "scope2" &&
+                    tab !== "scope3" &&
+                    tab !== "reports" &&
+                    tab !== "activity-data" && <Placeholder tab={tab} />}
                 </motion.div>
               </AnimatePresence>
             ) : (

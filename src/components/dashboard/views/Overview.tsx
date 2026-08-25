@@ -11,9 +11,12 @@ import TargetPanel from "@/components/dashboard/TargetPanel";
 import ActivityTable from "@/components/dashboard/ActivityTable";
 import Section from "@/components/dashboard/Section";
 import CountUp from "@/components/dashboard/CountUp";
+import SetupProgressBanner from "@/components/dashboard/SetupProgressBanner";
+import PhysicalStructureCard from "@/components/dashboard/PhysicalStructureCard";
 import { EASE } from "@/lib/animations";
 import type { TabId } from "@/components/dashboard/Sidebar";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
+import { usePhysicalStructure } from "@/hooks/usePhysicalStructure";
 import { getRecommendations } from "@/lib/api";
 
 const GROUP_ICONS: Record<string, string> = {
@@ -35,6 +38,7 @@ const GROUP_BAR_COLORS = [
 
 export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
   const { data: { KPIS, SCOPES, FOOTPRINT_GROUPS, TOTAL_12M } } = useDashboardContext();
+  const { orgName, reportingPeriod, stats, hierarchy, loading: structureLoading, isEmpty: structureEmpty } = usePhysicalStructure();
 
   const [topRecs, setTopRecs] = useState<any[]>([]);
 
@@ -46,13 +50,29 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
 
   return (
     <div className="flex flex-col gap-[20px] pb-[32px]">
-      
+      {/* ── Setup Progress & Organisation Hierarchy Banner (Phase 2) ── */}
+      <SetupProgressBanner
+        orgName={orgName}
+        reportingPeriod={reportingPeriod}
+        stats={stats}
+        loading={structureLoading}
+        onNavigate={onNavigate}
+      />
+
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2 xl:grid-cols-4">
         {KPIS.map((kpi: any, i: number) => (
           <KpiCard key={kpi.label} kpi={kpi} delay={0.05 + i * 0.08} />
         ))}
       </div>
+
+      {/* ── Physical Structure Tree (Phase 2) ── */}
+      <PhysicalStructureCard
+        hierarchy={hierarchy}
+        loading={structureLoading}
+        isEmpty={structureEmpty}
+        delay={0.15}
+      />
 
       {/* ── Emissions Over Time + Scope Donut ── */}
       <div className="grid grid-cols-1 gap-[16px] lg:grid-cols-3">
