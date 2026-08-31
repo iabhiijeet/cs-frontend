@@ -6,8 +6,8 @@ import { EASE } from "@/lib/animations";
 
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
-import { fetchAPI, lockReportingPeriod, openReportingPeriod } from "@/lib/api";
-import { Plus, LockKey, LockOpen, CalendarBlank } from "@phosphor-icons/react";
+import { fetchAPI, lockReportingPeriod, openReportingPeriod, getReportingPeriods } from "@/lib/api";
+import { Plus, LockKey, LockOpen, CalendarBlank, Funnel } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import ReportingPeriodModal from "./ReportingPeriodModal";
 
@@ -16,14 +16,12 @@ export default function ReportingPeriodsPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("ALL");
 
   const fetchData = async () => {
-    const uId = localStorage.getItem("universityId");
-    if (!uId) return;
-
     try {
       setLoading(true);
-      const response = await fetchAPI(`/reporting-periods?universityId=${uId}`);
+      const response = await getReportingPeriods();
       if (response.success && response.data) {
         setData(response.data);
       } else {
@@ -59,6 +57,11 @@ export default function ReportingPeriodsPage() {
     }
   };
 
+  const filteredData = data.filter((item) => {
+    if (filterStatus === "ALL") return true;
+    return item.status === filterStatus;
+  });
+
   return (
     <div className="flex min-h-dvh bg-[#fafafa]">
         <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={"reporting-periods"} onChange={() => {}} />
@@ -75,12 +78,28 @@ export default function ReportingPeriodsPage() {
               
               <div className="flex items-center justify-between">
                 <h1 className="text-[18px] font-semibold text-black">All Reporting Periods</h1>
-                <button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="flex items-center gap-[6px] rounded-[8px] bg-black px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-black/80 transition-colors"
-                >
-                  <Plus size={16} weight="bold" /> Create Reporting Period
-                </button>
+                <div className="flex items-center gap-[12px]">
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+                      <Funnel size={14} weight="bold" />
+                    </div>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="appearance-none rounded-[8px] border border-black/[0.08] bg-white py-[8px] pl-[32px] pr-[32px] text-[13px] font-medium outline-none focus:border-black"
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="OPEN">Open</option>
+                      <option value="LOCKED">Locked</option>
+                    </select>
+                  </div>
+                  <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-[6px] rounded-[8px] bg-black px-[16px] py-[8px] text-[13px] font-semibold text-white hover:bg-black/80 transition-colors"
+                  >
+                    <Plus size={16} weight="bold" /> Create Period
+                  </button>
+                </div>
               </div>
 
               <motion.div
@@ -93,12 +112,12 @@ export default function ReportingPeriodsPage() {
                   <div className="col-span-full py-[32px] text-center text-[13px] text-[#71717a]">
                     Loading reporting periods...
                   </div>
-                ) : data.length === 0 ? (
+                ) : filteredData.length === 0 ? (
                   <div className="col-span-full py-[32px] text-center text-[13px] text-[#71717a]">
                     No reporting periods found.
                   </div>
                 ) : (
-                  data.map((item) => (
+                  filteredData.map((item) => (
                     <div key={item.id} className="flex flex-col gap-[16px] rounded-[12px] border border-black/[0.08] bg-white p-[20px] shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-[12px]">

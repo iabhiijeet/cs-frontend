@@ -6,7 +6,7 @@ import { EASE } from "@/lib/animations";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import { getReviewActivities, verifyActivityData, rejectActivityData, calculateEmissions, startReviewActivityData } from "@/lib/api";
-import { CheckCircle, XCircle, Calculator, Eye, WarningCircle, ArrowRight } from "@phosphor-icons/react";
+import { CheckCircle, XCircle, Calculator, Eye, WarningCircle, ArrowRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import CalculationResultModal from "./CalculationResultModal";
 import ReviewDetailsModal from "./ReviewDetailsModal";
@@ -20,6 +20,7 @@ export default function ReviewPage() {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState("");
   const [filter, setFilter] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
   
   // Calculation & View State
   const [calcResult, setCalcResult] = useState<any>(null);
@@ -97,24 +98,29 @@ export default function ReviewPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "DRAFT": return <span className="flex items-center gap-[4px] rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">⚪ Draft</span>;
-      case "SUBMITTED": return <span className="flex items-center gap-[4px] rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700">🟡 Submitted</span>;
-      case "UNDER_REVIEW": return <span className="flex items-center gap-[4px] rounded bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">🟠 Under Review</span>;
-      case "VERIFIED": return <span className="flex items-center gap-[4px] rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">🟢 Verified</span>;
-      case "REJECTED": return <span className="flex items-center gap-[4px] rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">🔴 Rejected</span>;
-      case "CALCULATED": return <span className="flex items-center gap-[4px] rounded bg-[#0d3b2d] px-2 py-1 text-xs font-semibold text-white">✨ Calculated</span>;
+      case "DRAFT": return <span className="flex items-center gap-[4px] rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">âšª Draft</span>;
+      case "SUBMITTED": return <span className="flex items-center gap-[4px] rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700">ðŸŸ¡ Submitted</span>;
+      case "UNDER_REVIEW": return <span className="flex items-center gap-[4px] rounded bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">ðŸŸ  Under Review</span>;
+      case "VERIFIED": return <span className="flex items-center gap-[4px] rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">ðŸŸ¢ Verified</span>;
+      case "REJECTED": return <span className="flex items-center gap-[4px] rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">ðŸ”´ Rejected</span>;
+      case "CALCULATED": return <span className="flex items-center gap-[4px] rounded bg-[#0d3b2d] px-2 py-1 text-xs font-semibold text-white">âœ¨ Calculated</span>;
       default: return <span className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">{status}</span>;
     }
   };
 
-  const filteredData = data.filter(item => {
-    if (filter === "All") return true;
-    if (filter === "Submitted") return item.status === "SUBMITTED";
-    if (filter === "Under Review") return item.status === "UNDER_REVIEW";
-    if (filter === "Verified") return item.status === "VERIFIED" || item.status === "CALCULATED";
-    if (filter === "Rejected") return item.status === "REJECTED";
-    return true;
+  const filteredData = data.filter((item) => {
+    const matchesSearch = (item.category || "").toLowerCase().includes(searchTerm.toLowerCase());
+    let matchesFilter = true;
+    if (filter === "Submitted") matchesFilter = item.status === "SUBMITTED";
+    else if (filter === "Under Review") matchesFilter = item.status === "UNDER_REVIEW";
+    else if (filter === "Verified") matchesFilter = item.status === "VERIFIED" || item.status === "CALCULATED";
+    else if (filter === "Rejected") matchesFilter = item.status === "REJECTED";
+    return matchesSearch && matchesFilter;
   });
+
+  const pendingCount = data.filter((d) => d.status === "SUBMITTED" || d.status === "UNDER_REVIEW").length;
+  const verifiedCount = data.filter((d) => d.status === "VERIFIED" || d.status === "CALCULATED").length;
+  const rejectedCount = data.filter((d) => d.status === "REJECTED").length;
 
   return (
     <div className="flex min-h-dvh bg-[#fafafa]">
@@ -129,21 +135,44 @@ export default function ReviewPage() {
 
           <main className="flex-1 px-[20px] py-[24px] md:px-[32px]">
             <div className="mx-auto flex max-w-[1240px] flex-col gap-[16px]">
-              
-              <div className="flex items-center gap-[8px] overflow-x-auto pb-[4px] scrollbar-hide">
-                {["All", "Submitted", "Under Review", "Verified", "Rejected"].map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setFilter(tab)}
-                    className={`rounded-[8px] px-[16px] py-[6px] text-[13px] font-semibold whitespace-nowrap transition-colors ${
-                      filter === tab 
-                        ? "bg-black text-white" 
-                        : "bg-white border border-black/[0.08] text-[#52525b] hover:bg-black/5"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[16px] mb-[4px]">
+                <div>
+                  <h1 className="text-[22px] font-bold tracking-tight text-slate-900 mt-[2px]">Data Review</h1>
+                  <p className="text-[13px] text-slate-500 mt-[2px]">
+                    Verify submitted activity data and calculate emissions.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[16px]">
+                <div className="flex items-center gap-[8px] overflow-x-auto pb-[4px] scrollbar-hide">
+                  {["All", "Submitted", "Under Review", "Verified", "Rejected"].map(tab => (
+                    <button
+                      key={tab}
+                      onClick={() => setFilter(tab)}
+                      className={`rounded-[8px] px-[16px] py-[6px] text-[13px] font-semibold whitespace-nowrap transition-colors ${
+                        filter === tab 
+                          ? "bg-black text-white" 
+                          : "bg-white border border-black/[0.08] text-[#52525b] hover:bg-black/5"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="relative w-full sm:max-w-[280px]">
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+                    <MagnifyingGlass size={14} weight="bold" />
+                  </div>
+                  <input 
+                    type="text" 
+                    placeholder="Search category..." 
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full rounded-[8px] border border-slate-200 py-[6.5px] pl-[32px] pr-[12px] text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  />
+                </div>
               </div>
 
               <motion.div
@@ -161,7 +190,7 @@ export default function ReviewPage() {
                         <th className="px-[16px] py-[12px]">Quantity</th>
                         <th className="px-[16px] py-[12px]">Submitted By</th>
                         <th className="px-[16px] py-[12px]">Status</th>
-                        <th className="px-[16px] py-[12px]">CO₂e</th>
+                        <th className="px-[16px] py-[12px]">COâ‚‚e</th>
                         <th className="px-[16px] py-[12px] text-right">Action</th>
                       </tr>
                     </thead>
@@ -200,7 +229,7 @@ export default function ReviewPage() {
                             <td className="px-[16px] py-[14px] text-[13px] font-semibold text-[#16a34a]">
                               {item.status === "CALCULATED" || item.calculations?.length > 0
                                 ? `${Math.round(item.calculations[0]?.co2eKg || 0)} kg`
-                                : "—"}
+                                : "â€”"}
                             </td>
                             <td className="px-[16px] py-[14px] text-right">
                               <button 

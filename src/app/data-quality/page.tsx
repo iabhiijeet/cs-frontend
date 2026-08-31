@@ -5,7 +5,7 @@ import { motion } from "motion/react";
 import { EASE } from "@/lib/animations";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
-import { getDataQualityMetrics, fetchAPI } from "@/lib/api";
+import { getDataQualityMetrics, fetchAPI, getReportingPeriods } from "@/lib/api";
 import { toast } from "sonner";
 import {
   ShieldCheck,
@@ -96,12 +96,9 @@ export default function DataQualityPage() {
   }, [filters]);
 
   useEffect(() => {
-    const uId = localStorage.getItem("universityId");
-    if (uId) {
-      fetchAPI(`/reporting-periods?universityId=${uId}`).then(r => {
-        if (r.success) setPeriods(r.data);
-      });
-    }
+    getReportingPeriods().then(r => {
+      if (r.success) setPeriods(r.data);
+    });
     fetchData();
   }, [fetchData]);
 

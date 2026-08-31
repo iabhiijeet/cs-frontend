@@ -174,7 +174,7 @@ export default function SettingsPage() {
                               type="text"
                               value={uniForm.name}
                               onChange={(e) => setUniForm({ ...uniForm, name: e.target.value })}
-                              className="h-[36px] w-full rounded-[8px] border border-black/[0.08] px-[12px] text-[13px]"
+                              className="h-[36px] w-full rounded-[8px] border border-black/[0.08] px-[12px] text-[13px] outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a] transition-all"
                             />
                           </div>
                           <div className="flex flex-col gap-[6px]">
@@ -192,7 +192,7 @@ export default function SettingsPage() {
                               type="text"
                               value={uniForm.country}
                               onChange={(e) => setUniForm({ ...uniForm, country: e.target.value })}
-                              className="h-[36px] w-full rounded-[8px] border border-black/[0.08] px-[12px] text-[13px]"
+                              className="h-[36px] w-full rounded-[8px] border border-black/[0.08] px-[12px] text-[13px] outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a] transition-all"
                             />
                           </div>
                         </div>

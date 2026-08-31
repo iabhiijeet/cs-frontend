@@ -15,7 +15,8 @@ import ActivityDataView from "@/components/dashboard/views/ActivityDataView";
 import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
 import { EASE } from "@/lib/animations";
 import type { TabId } from "@/components/dashboard/Sidebar";
-import type { ScopeDetail } from "@/lib/demo-data";
+
+type ScopeKey = "scope1" | "scope2" | "scope3";
 
 const TITLES: Record<TabId, { title: string; subtitle: string }> = {
   overview: { title: "Overview", subtitle: "Carbon footprint at a glance" },
@@ -127,9 +128,9 @@ function DashboardContent() {
                   {tab === "overview" && <Overview onNavigate={setTab} />}
                   {tab === "footprint" && <Footprint />}
                   {tab === "category" && <Category />}
-                  {tab === "scope1" && <Scope scope={"scope1" as ScopeDetail["key"]} />}
-                  {tab === "scope2" && <Scope scope={"scope2" as ScopeDetail["key"]} />}
-                  {tab === "scope3" && <Scope scope={"scope3" as ScopeDetail["key"]} />}
+                  {tab === "scope1" && <Scope scope={"scope1" as ScopeKey} />}
+                  {tab === "scope2" && <Scope scope={"scope2" as ScopeKey} />}
+                  {tab === "scope3" && <Scope scope={"scope3" as ScopeKey} />}
                   {tab === "reports" && <ReportsView />}
                   {tab === "activity-data" && <ActivityDataView />}
                   {tab !== "overview" &&

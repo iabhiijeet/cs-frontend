@@ -1,37 +1,33 @@
 import { useState, useEffect } from 'react';
 import { getDashboardSummary, ContextError } from '../lib/api';
 import { useReportingPeriod } from './useReportingPeriod';
-import {
-  MONTHLY,
-  TOTAL_12M as DEMO_TOTAL_12M,
-  SCOPE1_12M as DEMO_SCOPE1,
-  SCOPE2_12M as DEMO_SCOPE2,
-  SCOPE3_12M as DEMO_SCOPE3,
-  SCOPES,
-  CATEGORIES,
-  KPIS,
-  SCOPE_DETAILS,
-  FOOTPRINT_GROUPS,
-  ACTIVITY,
-  ACTIVITY_STATS,
-  TARGETS,
-} from '../lib/demo-data';
-
-// Plain object so all views can safely destructure it
-const DEMO_DATA = {
-  MONTHLY,
-  TOTAL_12M: DEMO_TOTAL_12M,
-  SCOPE1_12M: DEMO_SCOPE1,
-  SCOPE2_12M: DEMO_SCOPE2,
-  SCOPE3_12M: DEMO_SCOPE3,
-  SCOPES,
-  CATEGORIES: CATEGORIES ?? [],
-  KPIS,
-  SCOPE_DETAILS: SCOPE_DETAILS ?? [],
-  FOOTPRINT_GROUPS: FOOTPRINT_GROUPS ?? [],
-  ACTIVITY,
-  ACTIVITY_STATS,
-  TARGETS,
+const EMPTY_DATA = {
+  MONTHLY: [],
+  TOTAL_12M: 0,
+  SCOPE1_12M: 0,
+  SCOPE2_12M: 0,
+  SCOPE3_12M: 0,
+  SCOPES: [
+    { key: "scope1", name: "Scope 1 — Direct", value: 0, share: 0, color: "#15803d" },
+    { key: "scope2", name: "Scope 2 — Energy", value: 0, share: 0, color: "#22c55e" },
+    { key: "scope3", name: "Scope 3 — Value chain", value: 0, share: 0, color: "#86efac" },
+  ],
+  CATEGORIES: [],
+  KPIS: [
+    { label: "Total footprint", value: 0, suffix: " tCO₂e", delta: 0, deltaLabel: "vs last 12 months", good: true, spark: [] },
+    { label: "Scope 1 emissions", value: 0, suffix: " tCO₂e", delta: 0, deltaLabel: "share of total", good: false, spark: [] },
+    { label: "Scope 2 emissions", value: 0, suffix: " tCO₂e", delta: 0, deltaLabel: "share of total", good: false, spark: [] },
+    { label: "Reduction vs baseline", value: 0, decimals: 1, suffix: "%", delta: 0, deltaLabel: "of baseline", good: true, spark: [] },
+  ],
+  SCOPE_DETAILS: [
+    { key: "scope1", num: "1", name: "Direct emissions", headline: "Sources you own or control", description: "Emissions from owned or controlled sources.", color: "#15803d", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
+    { key: "scope2", num: "2", name: "Energy purchases", headline: "Indirect emissions from energy", description: "Emissions from purchased electricity, heating and cooling.", color: "#22c55e", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
+    { key: "scope3", num: "3", name: "Value chain", headline: "All other indirect emissions", description: "Emissions across the full value chain.", color: "#86efac", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
+  ],
+  FOOTPRINT_GROUPS: [],
+  ACTIVITY: [],
+  ACTIVITY_STATS: { total: 0, draft: 0, submitted: 0, underReview: 0, verified: 0, rejected: 0, calculated: 0, pending: 0, verifiedTotal: 0 },
+  TARGETS: [],
 };
 
 
@@ -65,30 +61,26 @@ export function useDashboard() {
     }
 
     if (periodStatus === "empty") {
-      // No reporting periods exist yet — show demo data so the dashboard
-      // doesn't appear blank on first login.
-      setData(DEMO_DATA);
+      setData(EMPTY_DATA);
       setError(null);
-      setFallbackUsed(true);
+      setFallbackUsed(false);
       setLoading(false);
       return;
     }
 
     if (periodStatus === "error") {
-      // Period resolution failed — still show demo data so the UI isn't blank.
-      setData(DEMO_DATA);
+      setData(EMPTY_DATA);
       setError(periodError);
-      setFallbackUsed(true);
+      setFallbackUsed(false);
       setLoading(false);
       return;
     }
 
     const effectivePeriodId = filters.reportingPeriodId || activePeriodId || "";
     if (!effectivePeriodId) {
-      // No period selected yet — fall back to demo data.
-      setData(DEMO_DATA);
+      setData(EMPTY_DATA);
       setError(null);
-      setFallbackUsed(true);
+      setFallbackUsed(false);
       setLoading(false);
       return;
     }
@@ -97,44 +89,27 @@ export function useDashboard() {
       try {
         setLoading(true);
         setError(null);
-        const response = await getDashboardSummary(undefined, effectivePeriodId);
+        const response = await getDashboardSummary(undefined, effectivePeriodId, filters.campusId, filters.buildingId, filters.floorId);
 
         if (response.success && response.data) {
           const mapped = mapBackendToFrontend(response.data);
-          // If backend succeeded but has no emission data yet, use demo fallback
-          const isEmpty =
-            mapped.TOTAL_12M === 0 &&
-            (!mapped.ACTIVITY_STATS || mapped.ACTIVITY_STATS.total === 0);
-          if (isEmpty) {
-            console.info("Backend data is empty; showing demo data as fallback.");
-            setData(DEMO_DATA);
-            setFallbackUsed(true);
-          } else {
-            setData(mapped);
-            setFallbackUsed(false);
-          }
+          setData(mapped);
+          setFallbackUsed(false);
         } else {
-          // Genuine unsuccessful backend response → resilience fallback.
-          console.warn("Backend fetch returned an unsuccessful response; using demo fallback.", response.message);
           setError(response.message || "Backend returned an unsuccessful response.");
-          setData(DEMO_DATA);
-          setFallbackUsed(true);
+          setData(EMPTY_DATA);
+          setFallbackUsed(false);
         }
       } catch (err: any) {
         if (err instanceof ContextError) {
-          // Foundation error (missing universityId/reportingPeriodId):
-          // this is a broken request, NOT a backend outage. Never fall back.
-          console.error("Dashboard request was malformed:", err.message);
           setError(err.message);
-          setData(null);
+          setData(EMPTY_DATA);
           setFallbackUsed(false);
           return;
         }
-        // Network / backend failure → resilience fallback, clearly indicated.
-        console.warn("Backend fetch failed; using demo fallback.", err);
         setError(err?.message || "Backend is unavailable.");
-        setData(DEMO_DATA);
-        setFallbackUsed(true);
+        setData(EMPTY_DATA);
+        setFallbackUsed(false);
       } finally {
         setLoading(false);
       }
@@ -142,7 +117,7 @@ export function useDashboard() {
 
     fetchData();
      
-  }, [periodStatus, activePeriodId, filters.reportingPeriodId]);
+  }, [periodStatus, activePeriodId, filters.reportingPeriodId, filters.campusId, filters.buildingId, filters.floorId]);
 
   return { data, loading, error, fallbackUsed, periods, filters, setFilters };
 }

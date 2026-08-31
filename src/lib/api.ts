@@ -212,13 +212,16 @@ export async function calculateEmissions(activityId: string) {
 // ==========================================
 // DASHBOARD API
 // ==========================================
-export async function getDashboardSummary(universityId?: string, reportingPeriodId?: string) {
+export async function getDashboardSummary(universityId?: string, reportingPeriodId?: string, campusId?: string, buildingId?: string, floorId?: string) {
   const { uId, pId } = requireContext();
   const effectiveUId = universityId || uId;
   const effectivePId = reportingPeriodId || pId;
 
   let url = `/dashboard/summary?universityId=${effectiveUId}`;
   if (effectivePId) url += `&reportingPeriodId=${effectivePId}`;
+  if (campusId) url += `&campusId=${campusId}`;
+  if (buildingId) url += `&buildingId=${buildingId}`;
+  if (floorId) url += `&floorId=${floorId}`;
   return fetchAPI(url);
 }
 
@@ -721,4 +724,175 @@ export async function updateOnboarding(
     kind: "error",
     message: extractApiErrorMessage(data, "Failed to update onboarding"),
   };
+}
+
+// ==========================================
+// NEWLY ADDED ENDPOINTS (MISSING V2)
+// ==========================================
+
+// Dashboard
+export async function getDashboardOverview() {
+  const { uId, pId } = requireContext();
+  const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
+  return fetchAPI(`/dashboard/overview${query}`);
+}
+export async function getDashboardScopeBreakdown() {
+  const { uId, pId } = requireContext();
+  const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
+  return fetchAPI(`/dashboard/scope-breakdown${query}`);
+}
+export async function getDashboardCategories() {
+  const { uId, pId } = requireContext();
+  const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
+  return fetchAPI(`/dashboard/categories${query}`);
+}
+export async function getDashboardTopSources() {
+  const { uId, pId } = requireContext();
+  const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
+  return fetchAPI(`/dashboard/top-sources${query}`);
+}
+export async function getDashboardTrends() {
+  const { uId, pId } = requireContext();
+  const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
+  return fetchAPI(`/dashboard/trends${query}`);
+}
+export async function getDashboardBuildings() {
+  const { uId, pId } = requireContext();
+  const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
+  return fetchAPI(`/dashboard/buildings${query}`);
+}
+export async function getDashboardFloors() {
+  const { uId, pId } = requireContext();
+  const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
+  return fetchAPI(`/dashboard/floors${query}`);
+}
+export async function getDashboardBaselineComparison() {
+  const { uId, pId } = requireContext();
+  const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
+  return fetchAPI(`/dashboard/baseline-comparison${query}`);
+}
+export async function getDashboardIntensity() {
+  const { uId, pId } = requireContext();
+  const query = `?universityId=${uId}${pId ? `&reportingPeriodId=${pId}` : ""}`;
+  return fetchAPI(`/dashboard/intensity${query}`);
+}
+
+// Physical Hierarchy
+export async function getCampusById(id: string) {
+  return fetchAPI(`/campuses/${id}`);
+}
+export async function updateCampus(id: string, data: any) {
+  return fetchAPI(`/campuses/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+export async function getBuildingById(id: string) {
+  return fetchAPI(`/buildings/${id}`);
+}
+export async function updateBuilding(id: string, data: any) {
+  return fetchAPI(`/buildings/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+export async function createFloor(data: any) {
+  const { uId } = requireContext();
+  return fetchAPI(`/floors`, { method: "POST", body: JSON.stringify({ ...data, universityId: uId }) });
+}
+export async function getFloorById(id: string) {
+  return fetchAPI(`/floors/${id}`);
+}
+export async function updateFloor(id: string, data: any) {
+  return fetchAPI(`/floors/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+// Emission Factors
+export async function createEmissionFactor(data: any) {
+  return fetchAPI(`/emission-factors`, { method: "POST", body: JSON.stringify(data) });
+}
+export async function matchEmissionFactor(data: any) {
+  return fetchAPI(`/emission-factors/match`, { method: "POST", body: JSON.stringify(data) });
+}
+export async function importEmissionFactors(data: any) {
+  return fetchAPI(`/emission-factors/import`, { method: "POST", body: JSON.stringify(data) });
+}
+export async function getPendingEfActivities() {
+  return fetchAPI(`/emission-factors/pending`);
+}
+export async function getEmissionFactorById(id: string) {
+  return fetchAPI(`/emission-factors/${id}`);
+}
+export async function updateEmissionFactor(id: string, data: any) {
+  return fetchAPI(`/emission-factors/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+export async function deactivateEmissionFactor(id: string) {
+  return fetchAPI(`/emission-factors/${id}`, { method: "DELETE" });
+}
+
+// Imports & Documents
+export async function testStorageUpload(data: any) {
+  return fetchAPI(`/imports/test`, { method: "POST", body: JSON.stringify(data) });
+}
+export async function getDocumentByActivity(activityId: string) {
+  return fetchAPI(`/documents/activity/${activityId}`);
+}
+export async function getDocumentById(id: string) {
+  return fetchAPI(`/documents/${id}`);
+}
+export async function deleteDocument(id: string) {
+  return fetchAPI(`/documents/${id}`, { method: "DELETE" });
+}
+
+// Emissions
+export async function calculateEmissionsBulk(data: any) {
+  return fetchAPI(`/emissions/calculate`, { method: "POST", body: JSON.stringify(data) });
+}
+
+// University Statistics
+export async function getUniversityStatistics() {
+  const { uId } = requireContext();
+  return fetchAPI(`/university-statistics?universityId=${uId}`);
+}
+export async function createUniversityStatistic(data: any) {
+  const { uId } = requireContext();
+  return fetchAPI(`/university-statistics`, { method: "POST", body: JSON.stringify({ ...data, universityId: uId }) });
+}
+export async function updateUniversityStatistic(id: string, data: any) {
+  return fetchAPI(`/university-statistics/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+export async function deleteUniversityStatistic(id: string) {
+  return fetchAPI(`/university-statistics/${id}`, { method: "DELETE" });
+}
+
+// Universities
+export async function createUniversity(data: any) {
+  return fetchAPI(`/universities`, { method: "POST", body: JSON.stringify(data) });
+}
+export async function getUniversities() {
+  return fetchAPI(`/universities`);
+}
+
+// Taxonomy
+export async function importTaxonomy(data: any) {
+  return fetchAPI(`/taxonomy/import`, { method: "POST", body: JSON.stringify(data) });
+}
+
+// Assets
+export async function createAsset(data: any) {
+  const { uId } = requireContext();
+  return fetchAPI(`/assets`, { method: "POST", body: JSON.stringify({ ...data, universityId: uId }) });
+}
+export async function updateAsset(id: string, data: any) {
+  return fetchAPI(`/assets/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+}
+export async function getAssetById(id: string) {
+  return fetchAPI(`/assets/${id}`);
+}
+
+// Reset Activity Data
+export async function resetActivityData(id: string) {
+  return fetchAPI(`/activity-data/${id}/reset`, { method: "POST" });
+}
+
+// Baseline
+export async function getBaselineById(id: string) {
+  return fetchAPI(`/baselines/${id}`);
+}
+export async function submitBaseline(id: string) {
+  return fetchAPI(`/baselines/${id}/submit`, { method: "POST" });
 }

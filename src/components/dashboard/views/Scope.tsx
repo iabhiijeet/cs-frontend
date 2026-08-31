@@ -9,8 +9,22 @@ import AreaChart from "@/components/dashboard/AreaChart";
 import Donut from "@/components/dashboard/Donut";
 import BarList from "@/components/dashboard/BarList";
 import { EASE } from "@/lib/animations";
-import type { ScopeDetail } from "@/lib/demo-data";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
+
+export interface ScopeDetail {
+  key: "scope1" | "scope2" | "scope3";
+  num: string;
+  name: string;
+  headline: string;
+  description: string;
+  color: string;
+  share: number;
+  total: number;
+  delta: number;
+  intensity: number;
+  monthly: { month: string; value: number }[];
+  sources: { name: string; value: number; share: number }[];
+}
 
 const ICONS: Record<ScopeDetail["key"], Icon> = {
   scope1: Flame,

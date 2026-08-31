@@ -22,6 +22,7 @@ export default function TargetsPage() {
     reductionPct: 20,
     description: ""
   });
+  const [filter, setFilter] = useState("All");
 
   const fetchData = async () => {
     try {
@@ -178,7 +179,41 @@ export default function TargetsPage() {
                     </div>
                   ) : (
                     <div className="flex flex-col gap-[16px]">
-                      {targets.map(target => {
+                      <div className="flex items-center justify-between">
+                        <h2 className="text-[16px] font-semibold text-black">Active Targets</h2>
+                        <select 
+                          value={filter}
+                          onChange={(e) => setFilter(e.target.value)}
+                          className="rounded-[6px] border border-black/[0.1] bg-white px-[10px] py-[4px] text-[12px] outline-none"
+                        >
+                          <option value="All">All Statuses</option>
+                          <option value="On Track">On Track (&lt;= 50% Used)</option>
+                          <option value="At Risk">At Risk (&gt; 50% Used)</option>
+                          <option value="Exceeded">Exceeded (&gt; 100% Used)</option>
+                        </select>
+                      </div>
+                      
+                      {targets.filter(target => {
+                        if (filter === "All") return true;
+                        const progress = targetProgressMap[target.id];
+                        const pct = progress ? progress.progressPercent : 0;
+                        if (filter === "On Track") return pct <= 50;
+                        if (filter === "At Risk") return pct > 50 && pct <= 100;
+                        if (filter === "Exceeded") return pct > 100;
+                        return true;
+                      }).length === 0 ? (
+                        <div className="p-[24px] text-center text-[13px] text-[#71717a] border border-black/[0.08] rounded-[12px]">
+                          No targets match the filter.
+                        </div>
+                      ) : targets.filter(target => {
+                          if (filter === "All") return true;
+                          const progress = targetProgressMap[target.id];
+                          const pct = progress ? progress.progressPercent : 0;
+                          if (filter === "On Track") return pct <= 50;
+                          if (filter === "At Risk") return pct > 50 && pct <= 100;
+                          if (filter === "Exceeded") return pct > 100;
+                          return true;
+                        }).map(target => {
                         const progress = targetProgressMap[target.id];
                         
                         return (

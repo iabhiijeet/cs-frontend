@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import { EASE } from "@/lib/animations";
 import { useAuth } from "@/context/AuthContext";
-import { EnvelopeSimple, Plus, Trash, CheckCircle, X } from "@phosphor-icons/react";
+import { EnvelopeSimple, Plus, Trash, CheckCircle, X, MagnifyingGlass, Funnel } from "@phosphor-icons/react";
 import Topbar from "@/components/dashboard/Topbar";
 import { useEffect, useState } from "react";
 import { getUsers, createUser, deleteUser } from "@/lib/api";
@@ -13,6 +13,8 @@ export default function TeamPage() {
 
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState("ALL");
   
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -86,6 +88,15 @@ export default function TeamPage() {
     }
   };
 
+  const filteredUsers = users.filter(u => {
+    const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
+    const email = (u.email || "").toLowerCase();
+    const q = search.toLowerCase();
+    const matchesSearch = fullName.includes(q) || email.includes(q);
+    const matchesRole = filterRole === "ALL" || u.role === filterRole;
+    return matchesSearch && matchesRole;
+  });
+
   return (
     <div className="flex h-screen flex-col bg-[#fafafa] relative">
         <Topbar 
@@ -100,18 +111,52 @@ export default function TeamPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: EASE }}
           >
-            <div className="flex items-center justify-between mb-[24px]">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-[16px] mb-[24px]">
               <div>
                 <h2 className="text-[18px] font-semibold text-black">All Users</h2>
-                <p className="text-[13px] text-[#71717a]">Manage roles and permissions across your organization.</p>
+                <p className="text-[13px] text-[#71717a] mt-[4px]">Manage roles and permissions across your organization.</p>
               </div>
-              <button 
-                onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[12px] py-[8px] text-[13px] font-semibold text-white transition-colors hover:bg-[#15803d]"
-              >
-                <Plus size={14} weight="bold" />
-                Invite user
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-[12px] w-full sm:w-auto">
+                <div className="flex gap-[12px] w-full sm:w-auto">
+                  <div className="relative w-full sm:w-[220px]">
+                    <MagnifyingGlass size={16} className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[#a1a1aa]" />
+                    <input
+                      type="text"
+                      placeholder="Search by name or email..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="h-[36px] w-full rounded-[8px] border border-black/[0.08] bg-white pl-[36px] pr-[12px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
+                    />
+                  </div>
+                  <div className="relative w-full sm:w-[160px]">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+                      <Funnel size={14} weight="bold" />
+                    </div>
+                    <select
+                      value={filterRole}
+                      onChange={(e) => setFilterRole(e.target.value)}
+                      className="h-[36px] w-full appearance-none rounded-[8px] border border-black/[0.08] bg-white pl-[32px] pr-[28px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
+                    >
+                      <option value="ALL">All Roles</option>
+                      <option value="UNIVERSITY_ADMIN">Admin</option>
+                      <option value="SUSTAINABILITY_MANAGER">Sustainability Manager</option>
+                      <option value="FACILITIES_MANAGER">Facilities Manager</option>
+                      <option value="REVIEWER">Reviewer</option>
+                      <option value="DATA_ENTRY">Data Entry</option>
+                      <option value="AUDITOR">Auditor</option>
+                      <option value="MANAGEMENT">Management</option>
+                      <option value="USER">Standard User</option>
+                    </select>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="flex shrink-0 items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[16px] py-[8px] h-[36px] text-[13px] font-semibold text-white transition-colors hover:bg-[#15803d]"
+                >
+                  <Plus size={14} weight="bold" />
+                  Invite user
+                </button>
+              </div>
             </div>
 
             <div className="rounded-[12px] border border-black/[0.08] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
@@ -130,12 +175,12 @@ export default function TeamPage() {
                       <tr>
                         <td colSpan={4} className="p-[32px] text-center text-[#a1a1aa] text-[13px]">Loading users...</td>
                       </tr>
-                    ) : users.length === 0 ? (
+                    ) : filteredUsers.length === 0 ? (
                       <tr>
                         <td colSpan={4} className="p-[32px] text-center text-[#a1a1aa] text-[13px]">No users found.</td>
                       </tr>
                     ) : (
-                      users.map((u, i) => (
+                      filteredUsers.map((u, i) => (
                         <tr key={u.id} className="border-b border-black/[0.04] last:border-none hover:bg-black/[0.01] transition-colors">
                           <td className="px-[20px] py-[16px]">
                             <div className="flex items-center gap-[12px]">

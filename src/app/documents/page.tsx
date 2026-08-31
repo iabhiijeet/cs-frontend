@@ -7,7 +7,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import { getDocuments, uploadDocument, ocrDocument, createActivityFromDocument } from "@/lib/api";
-import { UploadSimple, FileText, CheckCircle, WarningCircle, MagicWand, Plus, FilePdf } from "@phosphor-icons/react";
+import { UploadSimple, FileText, CheckCircle, WarningCircle, MagicWand, Plus, FilePdf, Funnel, MagnifyingGlass } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import DocumentUploadModal from "./DocumentUploadModal";
 import OCRReviewModal from "./OCRReviewModal";
@@ -19,6 +19,10 @@ export default function DocumentsPage() {
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [ocrModalData, setOcrModalData] = useState<any>(null);
+
+  // Filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
 
   const fetchData = async () => {
     try {
@@ -74,6 +78,16 @@ export default function DocumentsPage() {
     }
   };
 
+  const filteredData = data.filter((item) => {
+    const matchesSearch = (item.fileName || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === "ALL" || item.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const processedCount = data.filter((d) => d.status === "PROCESSED" || d.status === "ACTIVITY_CREATED").length;
+  const failedCount = data.filter((d) => d.status === "FAILED").length;
+  const uploadedCount = data.length;
+
   return (
     <ProtectedRoute>
       <div className="flex min-h-dvh bg-[#fafafa]">
@@ -89,10 +103,16 @@ export default function DocumentsPage() {
           <main className="flex-1 px-[20px] py-[24px] md:px-[32px]">
             <div className="mx-auto flex max-w-[1240px] flex-col gap-[16px]">
               
-              <div className="flex justify-between items-center mb-[8px]">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[16px] mb-[4px]">
+                <div>
+                  <h1 className="text-[22px] font-bold tracking-tight text-slate-900 mt-[2px]">Document Hub</h1>
+                  <p className="text-[13px] text-slate-500 mt-[2px]">
+                    Upload invoices and automatically extract data via AI-powered OCR.
+                  </p>
+                </div>
                 <button 
                   onClick={() => setIsUploadModalOpen(true)}
-                  className="flex items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[12px] py-[8px] text-[13px] font-semibold text-white hover:bg-[#15803d]"
+                  className="flex items-center gap-[6px] rounded-[10px] bg-[#16a34a] px-[14px] py-[9px] text-[13px] font-bold text-white shadow-sm transition-all hover:bg-[#15803d]"
                 >
                   <UploadSimple size={14} weight="bold" />
                   Upload Document
@@ -105,6 +125,38 @@ export default function DocumentsPage() {
                 transition={{ duration: 0.4, ease: EASE }}
                 className="rounded-[12px] border border-black/[0.08] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
               >
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-[12px] p-[16px] border-b border-slate-200/70 bg-slate-50/40">
+                  <div className="relative w-full sm:max-w-[280px]">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+                      <MagnifyingGlass size={14} weight="bold" />
+                    </div>
+                    <input 
+                      type="text" 
+                      placeholder="Search document name..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full rounded-[8px] border border-slate-200 py-[8.5px] pl-[32px] pr-[12px] text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    />
+                  </div>
+                  <div className="relative w-full sm:max-w-[180px]">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+                      <Funnel size={14} weight="bold" />
+                    </div>
+                    <select
+                      value={filterStatus}
+                      onChange={(e) => setFilterStatus(e.target.value)}
+                      className="w-full appearance-none rounded-[8px] border border-slate-200 bg-white py-[8.5px] pl-[32px] pr-[12px] text-[13px] outline-none focus:border-indigo-500"
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="UPLOADED">Uploaded</option>
+                      <option value="PROCESSED">Processed</option>
+                      <option value="ACTIVITY_CREATED">Activity Created</option>
+                      <option value="FAILED">Failed</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[800px] border-collapse">
                     <thead>
@@ -123,14 +175,14 @@ export default function DocumentsPage() {
                             Loading documents...
                           </td>
                         </tr>
-                      ) : data.length === 0 ? (
+                      ) : filteredData.length === 0 ? (
                         <tr>
                           <td colSpan={5} className="px-[16px] py-[32px] text-center text-[13px] text-[#71717a]">
-                            No documents found. Upload an invoice to get started.
+                            No documents found matching the criteria.
                           </td>
                         </tr>
                       ) : (
-                        data.map((doc) => (
+                        filteredData.map((doc) => (
                           <tr key={doc.id} className="border-b border-black/[0.04] last:border-none hover:bg-black/[0.01] transition-colors">
                             <td className="px-[16px] py-[14px]">
                               <div className="flex items-center gap-[12px]">

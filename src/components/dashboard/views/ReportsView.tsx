@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { FileText, Download, PlusCircle, ArrowsClockwise } from "@phosphor-icons/react";
+import { FileText, Download, PlusCircle, ArrowsClockwise, MagnifyingGlass } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import Section from "@/components/dashboard/Section";
 import { EASE } from "@/lib/animations";
@@ -26,6 +26,7 @@ export default function ReportsView() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const loadReports = useCallback(async () => {
     try {
@@ -98,6 +99,11 @@ export default function ReportsView() {
     }
   };
 
+  const filteredReports = reports.filter(r => 
+    String(r.id).toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(r.status).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col gap-[16px]">
       <Section
@@ -123,6 +129,19 @@ export default function ReportsView() {
           </div>
         }
       >
+        <div className="mb-[16px] relative w-full sm:max-w-[320px]">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+            <MagnifyingGlass size={14} weight="bold" />
+          </div>
+          <input 
+            type="text" 
+            placeholder="Search reports by ID or status..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded-[8px] border border-slate-200 py-[8px] pl-[32px] pr-[12px] text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+          />
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-[40px] text-[13px] text-[#71717a]">
             Loading reports…
@@ -131,19 +150,19 @@ export default function ReportsView() {
           <div className="rounded-[10px] border border-orange-200 bg-orange-50 px-[16px] py-[20px] text-[13px] text-orange-800">
             {error}
           </div>
-        ) : reports.length === 0 ? (
+        ) : filteredReports.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-[8px] py-[48px] text-center">
             <span className="flex h-[44px] w-[44px] items-center justify-center rounded-full bg-black/[0.04] text-[#a1a1aa]">
               <FileText size={22} />
             </span>
-            <h3 className="text-[14px] font-semibold text-black">No reports yet</h3>
+            <h3 className="text-[14px] font-semibold text-black">No reports found</h3>
             <p className="text-[13px] text-[#71717a]">
-              Generate a report to produce a sustainability summary for the selected reporting period.
+              {reports.length === 0 ? "Generate a report to produce a sustainability summary." : "Try adjusting your search."}
             </p>
           </div>
         ) : (
           <div className="flex flex-col gap-[8px]">
-            {reports.map((report, i) => (
+            {filteredReports.map((report, i) => (
               <motion.div
                 key={report.id}
                 initial={{ opacity: 0, y: 8 }}

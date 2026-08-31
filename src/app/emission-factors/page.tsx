@@ -7,7 +7,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 import { getEmissionFactors } from "@/lib/api";
-import { MagnifyingGlass, Leaf, ShieldCheck, GlobeHemisphereWest, Tag } from "@phosphor-icons/react";
+import { MagnifyingGlass, Leaf, ShieldCheck, GlobeHemisphereWest, Tag, Funnel } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 export default function EmissionFactorsPage() {
@@ -15,6 +15,7 @@ export default function EmissionFactorsPage() {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [filterScope, setFilterScope] = useState("ALL");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -37,12 +38,15 @@ export default function EmissionFactorsPage() {
   }, []);
 
   const filteredData = useMemo(() => {
-    return data.filter(ef => 
-      ef.name.toLowerCase().includes(search.toLowerCase()) ||
-      ef.category.toLowerCase().includes(search.toLowerCase()) ||
-      ef.source.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [data, search]);
+    return data.filter(ef => {
+      const matchesSearch = 
+        ef.name.toLowerCase().includes(search.toLowerCase()) ||
+        ef.category.toLowerCase().includes(search.toLowerCase()) ||
+        ef.source.toLowerCase().includes(search.toLowerCase());
+      const matchesScope = filterScope === "ALL" || ef.scope === filterScope;
+      return matchesSearch && matchesScope;
+    });
+  }, [data, search, filterScope]);
 
   return (
     <ProtectedRoute>
@@ -59,16 +63,33 @@ export default function EmissionFactorsPage() {
           <main className="flex-1 px-[20px] py-[24px] md:px-[32px]">
             <div className="mx-auto flex max-w-[1240px] flex-col gap-[16px]">
               
-              <div className="flex justify-between items-center mb-[8px]">
-                <div className="relative w-full max-w-[320px]">
-                  <MagnifyingGlass size={16} className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[#a1a1aa]" />
-                  <input
-                    type="text"
-                    placeholder="Search by name, category, or source..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="h-[36px] w-full rounded-[8px] border border-black/[0.08] bg-white pl-[36px] pr-[12px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
-                  />
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-[12px] mb-[8px]">
+                <div className="flex flex-col sm:flex-row gap-[12px] w-full max-w-[500px]">
+                  <div className="relative w-full">
+                    <MagnifyingGlass size={16} className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[#a1a1aa]" />
+                    <input
+                      type="text"
+                      placeholder="Search by name, category, or source..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      className="h-[36px] w-full rounded-[8px] border border-black/[0.08] bg-white pl-[36px] pr-[12px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
+                    />
+                  </div>
+                  <div className="relative w-full sm:max-w-[160px]">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+                      <Funnel size={14} weight="bold" />
+                    </div>
+                    <select
+                      value={filterScope}
+                      onChange={(e) => setFilterScope(e.target.value)}
+                      className="h-[36px] w-full appearance-none rounded-[8px] border border-black/[0.08] bg-white pl-[32px] pr-[28px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
+                    >
+                      <option value="ALL">All Scopes</option>
+                      <option value="SCOPE_1">Scope 1</option>
+                      <option value="SCOPE_2">Scope 2</option>
+                      <option value="SCOPE_3">Scope 3</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 

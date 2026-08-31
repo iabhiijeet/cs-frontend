@@ -22,60 +22,8 @@ export interface UsePhysicalStructureResult {
   refetch: () => Promise<void>;
 }
 
-// Fallback demo hierarchy in case backend is empty/offline
-const DEMO_HIERARCHY: PhysicalHierarchy = {
-  campuses: [
-    {
-      name: "Main Campus",
-      code: "MAIN-01",
-      city: "New Delhi",
-      region: "Delhi (BSES/Tata Power)",
-      country: "India",
-      metadata: {
-        granularity: "floor",
-        reportingYear: "2025-26",
-      },
-      buildings: [
-        {
-          name: "Academic Block",
-          code: "ACAD-01",
-          buildingType: "Academic",
-          areaSqm: 4500,
-          occupancy: 600,
-          metadata: { hasDG: true, hasChiller: true, hasSolar: true },
-          floors: [
-            { name: "Ground Floor", code: "GF", floorNumber: 0, areaSqm: 1500, occupancy: 200, metadata: { acCount: "8" } },
-            { name: "First Floor", code: "F1", floorNumber: 1, areaSqm: 1500, occupancy: 220, metadata: { acCount: "10" } },
-            { name: "Second Floor", code: "F2", floorNumber: 2, areaSqm: 1500, occupancy: 180, metadata: { acCount: "6" } },
-          ],
-        },
-        {
-          name: "Central Library",
-          code: "LIB-01",
-          buildingType: "Library",
-          areaSqm: 2800,
-          occupancy: 350,
-          metadata: { hasDG: true, hasChiller: true },
-          floors: [
-            { name: "Ground Floor", code: "GF", floorNumber: 0, areaSqm: 1400, occupancy: 150, metadata: { acCount: "6" } },
-            { name: "First Floor", code: "F1", floorNumber: 1, areaSqm: 1400, occupancy: 200, metadata: { acCount: "8" } },
-          ],
-        },
-        {
-          name: "Administration Wing",
-          code: "ADMIN-01",
-          buildingType: "Administrative",
-          areaSqm: 1800,
-          occupancy: 120,
-          metadata: { hasSolar: true },
-          floors: [
-            { name: "Ground Floor", code: "GF", floorNumber: 0, areaSqm: 900, occupancy: 60, metadata: { acCount: "5" } },
-            { name: "First Floor", code: "F1", floorNumber: 1, areaSqm: 900, occupancy: 60, metadata: { acCount: "5" } },
-          ],
-        },
-      ],
-    },
-  ],
+const EMPTY_HIERARCHY: PhysicalHierarchy = {
+  campuses: [],
 };
 
 function computeStats(hierarchy: PhysicalHierarchy | null): PhysicalStructureStats {
@@ -190,14 +138,14 @@ export function usePhysicalStructure(): UsePhysicalStructureResult {
         }
       }
 
-      // 3. Graceful demo fallback
-      setOrgName("Sunrise Institute of Technology");
-      setReportingPeriod("FY 2025–26");
-      setHierarchy(DEMO_HIERARCHY);
+      // 3. Graceful empty state
+      setOrgName("Your Organisation");
+      setReportingPeriod("");
+      setHierarchy(EMPTY_HIERARCHY);
     } catch (err: any) {
-      console.warn("Could not fetch physical structure from backend, using fallback.", err);
+      console.warn("Could not fetch physical structure from backend.", err);
       setError(err?.message || "Failed to load physical structure");
-      setHierarchy(DEMO_HIERARCHY);
+      setHierarchy(EMPTY_HIERARCHY);
     } finally {
       setLoading(false);
     }

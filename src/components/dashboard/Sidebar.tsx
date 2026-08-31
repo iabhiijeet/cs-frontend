@@ -185,7 +185,7 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
                     entry={entry}
                     active={active === entry.id}
                     onClick={() => {
-                      if (["activity-data", "documents", "review", "calculations", "team", "settings", "reporting-periods", "emission-factors", "baseline", "targets", "data-quality", "recommendations", "reports"].includes(entry.id)) {
+                      if (["documents", "review", "calculations", "team", "settings", "reporting-periods", "emission-factors", "baseline", "targets", "data-quality", "recommendations", "reports"].includes(entry.id)) {
                         window.location.href = `/${entry.id}`;
                       } else {
                         if (window.location.pathname !== "/dashboard" && window.location.pathname !== "/") {

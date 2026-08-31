@@ -7,7 +7,6 @@ import { getActivityData, deleteActivityData, submitActivityData } from "@/lib/a
 import {
   Plus,
   UploadSimple,
-  PencilSimple,
   Trash,
   Eye,
   PaperPlaneRight,
@@ -15,15 +14,21 @@ import {
   MapPin,
   CheckCircle,
   Clock,
-  ShieldCheck,
   Sparkle,
+  WarningCircle,
+  MagnifyingGlass,
+  Funnel,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import AddActivityModal from "@/app/activity-data/AddActivityModal";
 import ImportActivityModal from "@/app/activity-data/ImportActivityModal";
 import ViewActivityModal from "@/app/activity-data/ViewActivityModal";
 import { useReportingPeriodStatus } from "@/hooks/useReportingPeriodStatus";
+import { usePhysicalStructure } from "@/hooks/usePhysicalStructure";
 import Section from "@/components/dashboard/Section";
+import SetupProgressBanner from "@/components/dashboard/SetupProgressBanner";
+import PhysicalStructureCard from "@/components/dashboard/PhysicalStructureCard";
+import type { TabId } from "@/components/dashboard/Sidebar";
 
 export default function ActivityDataView() {
   const [data, setData] = useState<any[]>([]);
@@ -32,7 +37,13 @@ export default function ActivityDataView() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [viewActivity, setViewActivity] = useState<any>(null);
 
+  // Filters for the table
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterScope, setFilterScope] = useState("ALL");
+
   const { isLocked } = useReportingPeriodStatus();
+  const { orgName, reportingPeriod, stats, hierarchy, loading: structureLoading, isEmpty: structureEmpty } = usePhysicalStructure();
 
   const fetchData = async () => {
     try {
@@ -41,7 +52,6 @@ export default function ActivityDataView() {
       if (response.success && response.data) {
         setData(response.data);
       } else {
-        // Mock sample activities if backend has no data yet
         setData([]);
       }
     } catch (err: any) {
@@ -77,9 +87,21 @@ export default function ActivityDataView() {
     }
   };
 
+  const filteredData = data.filter((item) => {
+    const matchesSearch =
+      (item.category || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.locationPath || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === "ALL" || item.status === filterStatus;
+    const matchesScope = filterScope === "ALL" || item.scope === filterScope;
+    return matchesSearch && matchesStatus && matchesScope;
+  });
+
   const draftCount = data.filter((d) => d.status === "DRAFT").length;
   const submittedCount = data.filter((d) => d.status === "SUBMITTED" || d.status === "UNDER_REVIEW").length;
   const verifiedCount = data.filter((d) => d.status === "VERIFIED" || d.status === "CALCULATED").length;
+
+  // Dummy navigate handler since we're already on the activity-data page
+  const handleNavigate = (_tab: TabId) => {};
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -117,7 +139,22 @@ export default function ActivityDataView() {
 
   return (
     <div className="flex flex-col gap-[20px] pb-[32px]">
-      {/* ── Top Header & Stats Banner ── */}
+      {/* â”€â”€ Organisation Setup & Physical Hierarchy (from Phase 2) â”€â”€ */}
+      <SetupProgressBanner
+        orgName={orgName}
+        reportingPeriod={reportingPeriod}
+        stats={stats}
+        loading={structureLoading}
+        onNavigate={handleNavigate}
+      />
+
+      <PhysicalStructureCard
+        hierarchy={hierarchy}
+        loading={structureLoading}
+        isEmpty={structureEmpty}
+        delay={0.1}
+      />
+      {/* â”€â”€ Top Header & Stats Banner â”€â”€ */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -127,15 +164,18 @@ export default function ActivityDataView() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-[16px]">
           <div>
             <div className="flex items-center gap-[8px]">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600">Primary Data Logging</span>
-              <span className="rounded-full bg-indigo-50 border border-indigo-100 px-[8px] py-[1.5px] text-[10.5px] font-semibold text-indigo-700">
-                Phase 3 Active
-              </span>
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-indigo-600">Reporting Period: FY 2025–26</span>
             </div>
-            <h1 className="text-[22px] font-bold tracking-tight text-slate-900 mt-[2px]">Activity Data Management</h1>
+            <h1 className="text-[22px] font-bold tracking-tight text-slate-900 mt-[2px]">Activity Data</h1>
             <p className="text-[13px] text-slate-500 mt-[2px]">
-              Track energy, fuel, and activity records connected to your physical hierarchy.
+              Collect and manage operational data used to calculate your university's carbon footprint.
             </p>
+            <div className="mt-4">
+              <div className="mb-1 text-[13px] font-semibold text-slate-700">Data Collection Progress: 45%</div>
+              <div className="h-[6px] w-48 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full bg-indigo-600" style={{ width: "45%" }}></div>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-[10px] shrink-0">
@@ -182,12 +222,60 @@ export default function ActivityDataView() {
         </div>
       </motion.div>
 
-      {/* ── Activity Records Table ── */}
+      {/* â”€â”€ Activity Records Table â”€â”€ */}
       <Section
         title="Activity Log"
         subtitle="Primary activity records with location breakdown"
         delay={0.15}
       >
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-[12px] p-[16px] border-b border-slate-200/70 bg-white/50">
+          <div className="relative w-full sm:max-w-[240px]">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+              <MagnifyingGlass size={14} weight="bold" />
+            </div>
+            <input 
+              type="text" 
+              placeholder="Search category or location..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-[8px] border border-slate-200 py-[8px] pl-[32px] pr-[12px] text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+            />
+          </div>
+          <div className="flex gap-[12px] w-full sm:w-auto">
+            <div className="relative w-full sm:w-[160px]">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+                <Funnel size={14} weight="bold" />
+              </div>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full appearance-none rounded-[8px] border border-slate-200 bg-white py-[8px] pl-[32px] pr-[12px] text-[13px] outline-none focus:border-indigo-500"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="DRAFT">Draft</option>
+                <option value="SUBMITTED">Submitted</option>
+                <option value="VERIFIED">Verified</option>
+              </select>
+            </div>
+            <div className="relative w-full sm:w-[160px]">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
+                <Funnel size={14} weight="bold" />
+              </div>
+              <select
+                value={filterScope}
+                onChange={(e) => setFilterScope(e.target.value)}
+                className="w-full appearance-none rounded-[8px] border border-slate-200 bg-white py-[8px] pl-[32px] pr-[12px] text-[13px] outline-none focus:border-indigo-500"
+              >
+                <option value="ALL">All Scopes</option>
+                <option value="SCOPE_1">Scope 1</option>
+                <option value="SCOPE_2">Scope 2</option>
+                <option value="SCOPE_3">Scope 3</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] border-collapse text-left">
             <thead>
@@ -203,32 +291,48 @@ export default function ActivityDataView() {
             <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-[36px] text-center text-[13px] text-slate-400">
+                  <td colSpan={7} className="py-[36px] text-center text-[13px] text-slate-400">
                     Loading activity records...
                   </td>
                 </tr>
-              ) : data.length === 0 ? (
+              ) : filteredData.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-[40px] text-center">
+                  <td colSpan={7} className="py-[40px] text-center">
                     <div className="flex flex-col items-center justify-center gap-[6px]">
-                      <span className="flex h-[40px] w-[40px] items-center justify-center rounded-full bg-indigo-50 text-indigo-600 mb-[4px]">
-                        <Plus size={20} weight="bold" />
+                      <span className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-indigo-50 text-indigo-600 mb-[8px]">
+                        <Plus size={24} weight="bold" />
                       </span>
-                      <p className="text-[14px] font-bold text-slate-800">No activity data logged yet</p>
-                      <p className="text-[12.5px] text-slate-500 max-w-[320px]">
-                        Click <strong>Add Activity</strong> above to log your first electricity or fuel consumption record.
+                      <p className="text-[16px] font-bold text-slate-900">Start Building Your Carbon Profile</p>
+                      <p className="text-[13px] text-slate-500 max-w-[320px] mb-4">
+                        Add your first operational activity to begin calculating your university's carbon footprint.
                       </p>
+                      <div className="flex flex-col gap-2 w-full max-w-[200px]">
+                        <button
+                          onClick={() => !isLocked && setIsAddOpen(true)}
+                          disabled={isLocked}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-[13px] font-bold text-white hover:bg-indigo-700 transition-colors"
+                        >
+                          <Plus size={16} weight="bold" /> Add Your First Activity
+                        </button>
+                        <button
+                          onClick={() => !isLocked && setIsImportOpen(true)}
+                          disabled={isLocked}
+                          className="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <UploadSimple size={16} weight="bold" /> Import Data
+                        </button>
+                      </div>
                     </div>
                   </td>
                 </tr>
               ) : (
-                data.map((item) => (
+                filteredData.map((item) => (
                   <tr key={item.id} className="hover:bg-slate-50/60 transition-colors">
                     {/* Date */}
                     <td className="px-[14px] py-[14px] text-[13px] font-semibold tabular-nums text-slate-800">
                       {item.activityDate
                         ? new Date(item.activityDate).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-                        : "—"}
+                        : "â€”"}
                     </td>
 
                     {/* Activity & Scope */}
@@ -309,7 +413,7 @@ export default function ActivityDataView() {
         </div>
       </Section>
 
-      {/* ── Modals ── */}
+      {/* â”€â”€ Modals â”€â”€ */}
       <AnimatePresence>
         {isAddOpen && (
           <AddActivityModal

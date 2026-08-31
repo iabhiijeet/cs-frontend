@@ -5,7 +5,17 @@ import { ArrowDownRight, ArrowUpRight } from "@phosphor-icons/react";
 import CountUp from "@/components/dashboard/CountUp";
 import Sparkline from "@/components/dashboard/Sparkline";
 import { EASE } from "@/lib/animations";
-import type { Kpi } from "@/lib/demo-data";
+
+export interface Kpi {
+  label: string;
+  value: number;
+  decimals?: number;
+  suffix?: string;
+  delta: number;
+  deltaLabel: string;
+  good: boolean;
+  spark: number[];
+}
 
 export default function KpiCard({ kpi, delay }: { kpi: Kpi; delay: number }) {
   return (

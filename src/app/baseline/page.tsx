@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
-import { fetchAPI, getBaselines, createBaseline, approveBaseline, getBaselineComparison } from "@/lib/api";
+import { fetchAPI, getBaselines, createBaseline, approveBaseline, getBaselineComparison, getReportingPeriods } from "@/lib/api";
 import { toast } from "sonner";
 import { CheckCircle, LockKey } from "@phosphor-icons/react";
 import BaselineComparisonView from "./BaselineComparisonView";
@@ -26,7 +26,7 @@ export default function BaselinePage() {
       if (!uId) return;
 
       const [resPeriods, resBaselines] = await Promise.all([
-        fetchAPI(`/reporting-periods?universityId=${uId}`),
+        getReportingPeriods(),
         getBaselines()
       ]);
 
