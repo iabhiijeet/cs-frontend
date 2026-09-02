@@ -50,16 +50,7 @@ export default function ReviewPage() {
     if (!confirm("Approve this activity data? It will be marked as verified and CO₂e will be calculated.")) return;
     try {
       await verifyActivityData(id);
-      toast.success("Activity verified — calculating CO₂e…");
-      // Auto-trigger CO₂e calculation immediately after verification
-      try {
-        const calcRes = await calculateEmissions(id);
-        setCalcResult(calcRes);
-        toast.success("CO₂e calculated successfully");
-      } catch {
-        // Calculation failure is non-fatal — user can retry manually
-        toast.error("CO₂e calculation failed — please retry from the Review panel");
-      }
+      toast.success("Activity verified & CO₂e calculated");
       fetchData();
     } catch (err: any) {
       toast.error(err.message || "Failed to verify");
