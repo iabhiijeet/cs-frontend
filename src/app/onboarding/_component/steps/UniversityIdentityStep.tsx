@@ -105,11 +105,10 @@ export function UniversityIdentityStep({
     {
       id: "identity",
       node: (
-        <Section
-          step="identity"
-          title="University identity"
-          description="Basic details that anchor every carbon report and disclosure we generate."
-        >
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="space-y-8">
+            <div>
+              <h3 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-200">1. Basic Details</h3>
           <Row>
             <Field>
               <FieldLabel htmlFor="uniLegalName" required>
@@ -205,91 +204,78 @@ export function UniversityIdentityStep({
               helper="Used for benchmarking with peer institutions."
             />
           </Row>
-        </Section>
+          </div>
+          <div className="border-t border-slate-200/50 dark:border-white/10 pt-8">
+            <h3 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-200">2. University Type</h3>
+            <Field>
+              <SelectableCards
+                id="universityType"
+                value={u.universityType}
+                onChange={(v) => updateU({ universityType: v })}
+                options={UNIVERSITY_TYPES}
+                columns={3}
+                error={err("universityType")}
+              />
+            </Field>
+          </div>
+
+          <div className="border-t border-slate-200/50 dark:border-white/10 pt-8">
+            <h3 className="mb-4 text-sm font-semibold text-slate-800 dark:text-slate-200">3. Institution Size</h3>
+            <Row>
+              <SelectField
+                id="campusCount"
+                label="Number of campuses"
+                required
+                value={u.campusCount}
+                onChange={(v) => updateU({ campusCount: v })}
+                options={CAMPUS_COUNTS.map((c) => ({ value: c, label: c }))}
+                placeholder="Select range"
+                helper="Include all physical campus sites."
+                error={err("campusCount")}
+              />
+              <SelectField
+                id="studentEnrollment"
+                label="Total student enrollment"
+                required
+                value={u.studentEnrollment}
+                onChange={(v) => updateU({ studentEnrollment: v })}
+                options={STUDENT_RANGES.map((r) => ({ value: r, label: r }))}
+                placeholder="Select range"
+                helper="Normalizes per-student emission intensity."
+                error={err("studentEnrollment")}
+              />
+            </Row>
+            <Row>
+              <SelectField
+                id="staffCount"
+                label="Total staff (faculty + admin)"
+                required
+                value={u.staffCount}
+                onChange={(v) => updateU({ staffCount: v })}
+                options={STAFF_RANGES.map((r) => ({ value: r, label: r }))}
+                placeholder="Select range"
+                helper="Used to estimate staff commuting emissions."
+                error={err("staffCount")}
+              />
+              <SelectField
+                id="uniFiscalYearEnd"
+                label="Fiscal year end"
+                required
+                value={u.fiscalYearEnd}
+                onChange={(v) => updateU({ fiscalYearEnd: v })}
+                options={MONTHS.map((m) => ({ value: m, label: m }))}
+                placeholder="Select month"
+                helper="Aligns reporting periods with your academic / financial calendar."
+                error={err("fiscalYearEnd")}
+              />
+            </Row>
+          </div>
+          </div>
+        </div>
       ),
-    },
-    {
-      id: "structure",
-      node: (
-        <Section
-          step="structure"
-          title="University type"
-          description="The type of university determines which emission factors and regulatory frameworks apply."
-        >
-          <Field>
-            <FieldLabel required>University type</FieldLabel>
-            <SelectableCards
-              id="universityType"
-              value={u.universityType}
-              onChange={(v) => updateU({ universityType: v })}
-              options={UNIVERSITY_TYPES}
-              columns={3}
-              error={err("universityType")}
-            />
-          </Field>
-        </Section>
-      ),
-    },
-    {
-      id: "size",
-      node: (
-        <Section
-          step="size"
-          title="Institution size"
-          description="Size inputs power intensity benchmarks and per-capita emission estimates."
-        >
-          <Row>
-            <SelectField
-              id="campusCount"
-              label="Number of campuses"
-              required
-              value={u.campusCount}
-              onChange={(v) => updateU({ campusCount: v })}
-              options={CAMPUS_COUNTS.map((c) => ({ value: c, label: c }))}
-              placeholder="Select range"
-              helper="Include all physical campus sites."
-              error={err("campusCount")}
-            />
-            <SelectField
-              id="studentEnrollment"
-              label="Total student enrollment"
-              required
-              value={u.studentEnrollment}
-              onChange={(v) => updateU({ studentEnrollment: v })}
-              options={STUDENT_RANGES.map((r) => ({ value: r, label: r }))}
-              placeholder="Select range"
-              helper="Normalizes per-student emission intensity."
-              error={err("studentEnrollment")}
-            />
-          </Row>
-          <Row>
-            <SelectField
-              id="staffCount"
-              label="Total staff (faculty + admin)"
-              required
-              value={u.staffCount}
-              onChange={(v) => updateU({ staffCount: v })}
-              options={STAFF_RANGES.map((r) => ({ value: r, label: r }))}
-              placeholder="Select range"
-              helper="Used to estimate staff commuting emissions."
-              error={err("staffCount")}
-            />
-            <SelectField
-              id="uniFiscalYearEnd"
-              label="Fiscal year end"
-              required
-              value={u.fiscalYearEnd}
-              onChange={(v) => updateU({ fiscalYearEnd: v })}
-              options={MONTHS.map((m) => ({ value: m, label: m }))}
-              placeholder="Select month"
-              helper="Aligns reporting periods with your academic / financial calendar."
-              error={err("fiscalYearEnd")}
-            />
-          </Row>
-        </Section>
-      ),
-    },
+    }
   ];
+
 
   return (
     <>

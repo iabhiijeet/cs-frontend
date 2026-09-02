@@ -39,12 +39,8 @@ export default function SignUpForm() {
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('carbonsynq_org_type', orgType);
       }
-      // New accounts go straight to their respective onboarding.
-      if (orgType === 'university') {
-        router.push('/university-intake');
-      } else {
-        router.push('/onboarding');
-      }
+      // New accounts first see the Setup checklist, which guides them to onboarding.
+      router.push('/setup');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create account');
       setIsPending(false);

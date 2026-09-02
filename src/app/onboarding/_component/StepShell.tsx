@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, ArrowRight, SkipForward } from "lucide-react";
 
@@ -40,6 +41,13 @@ export function StepShell({
   onSkip,
   pips,
 }: StepShellProps) {
+  const [fromSetup, setFromSetup] = React.useState(false);
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setFromSetup(!!localStorage.getItem("setup_return"));
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen flex-col">
       <div className="mx-auto w-full max-w-[760px] flex-1 px-4 pb-16 pt-10 sm:px-6 sm:pt-14">

@@ -35,7 +35,7 @@ export function SegmentedControl({
         id={id}
         role="radiogroup"
         aria-label="Select an option"
-        className="inline-grid w-full grid-cols-2 gap-1 rounded-xl border border-input bg-muted/70 p-1 sm:grid-cols-4"
+        className="inline-grid w-full grid-cols-2 gap-1 rounded-2xl border border-black/5 bg-black/5 p-1.5 dark:border-white/10 dark:bg-white/5 sm:grid-cols-4 backdrop-blur-sm"
         style={{
           gridTemplateColumns: `repeat(${Math.min(options.length, 4)}, minmax(0, 1fr))`,
         }}
@@ -58,7 +58,7 @@ export function SegmentedControl({
                 <motion.span
                   layoutId={`${id ?? "seg"}-active`}
                   transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                  className="absolute inset-0 rounded-lg border border-border bg-background shadow-sm"
+                  className="absolute inset-0 rounded-[0.85rem] border border-black/5 bg-white shadow-md dark:border-white/10 dark:bg-slate-800"
                 />
               )}
               <span className="relative z-10 inline-flex items-center gap-1.5">
@@ -110,10 +110,10 @@ export function SelectableCards({
               aria-checked={isSelected}
               onClick={() => onChange(opt.value)}
               className={cn(
-                "group relative flex items-start gap-3 rounded-xl border p-3.5 text-left transition-all outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+                "group relative flex items-start gap-3 rounded-2xl border p-4 text-left transition-all duration-300 outline-none focus-visible:ring-4 focus-visible:ring-primary/20 hover:shadow-lg",
                 isSelected
-                  ? "border-primary bg-accent-muted/60 shadow-[0_0_0_3px_rgba(22,163,74,0.12)]"
-                  : "border-border bg-background hover:border-foreground/25 hover:bg-secondary/50"
+                  ? "border-primary/50 bg-primary/5 shadow-[0_0_0_2px_rgba(22,163,74,0.2)] dark:bg-primary/10"
+                  : "border-black/5 dark:border-white/10 bg-white/40 dark:bg-black/20 hover:bg-white/80 dark:hover:bg-black/40 backdrop-blur-md"
               )}
             >
               {Icon && (

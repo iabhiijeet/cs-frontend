@@ -12,7 +12,7 @@ import { EASE } from "@/lib/animations";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
 
 export interface ScopeDetail {
-  key: "scope1" | "scope2" | "scope3";
+  key: "scope1" | "scope2";
   num: string;
   name: string;
   headline: string;
@@ -29,7 +29,6 @@ export interface ScopeDetail {
 const ICONS: Record<ScopeDetail["key"], Icon> = {
   scope1: Flame,
   scope2: Lightning,
-  scope3: GlobeHemisphereWest,
 };
 
 const METRICS: { key: string; Icon: Icon; label: string }[] = [
@@ -49,11 +48,6 @@ const SCOPE_ACCENT: Record<string, { gradient: string; glow: string; badge: stri
     gradient: "from-violet-900 via-purple-700 to-purple-500",
     glow: "rgba(139,92,246,0.25)",
     badge: "bg-purple-100/60 text-purple-200",
-  },
-  scope3: {
-    gradient: "from-teal-900 via-teal-700 to-teal-500",
-    glow: "rgba(13,148,136,0.25)",
-    badge: "bg-teal-100/60 text-teal-200",
   },
 };
 

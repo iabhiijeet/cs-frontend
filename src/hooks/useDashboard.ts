@@ -10,7 +10,6 @@ const EMPTY_DATA = {
   SCOPES: [
     { key: "scope1", name: "Scope 1 — Direct", value: 0, share: 0, color: "#15803d" },
     { key: "scope2", name: "Scope 2 — Energy", value: 0, share: 0, color: "#22c55e" },
-    { key: "scope3", name: "Scope 3 — Value chain", value: 0, share: 0, color: "#86efac" },
   ],
   CATEGORIES: [],
   KPIS: [
@@ -22,7 +21,6 @@ const EMPTY_DATA = {
   SCOPE_DETAILS: [
     { key: "scope1", num: "1", name: "Direct emissions", headline: "Sources you own or control", description: "Emissions from owned or controlled sources.", color: "#15803d", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
     { key: "scope2", num: "2", name: "Energy purchases", headline: "Indirect emissions from energy", description: "Emissions from purchased electricity, heating and cooling.", color: "#22c55e", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
-    { key: "scope3", num: "3", name: "Value chain", headline: "All other indirect emissions", description: "Emissions across the full value chain.", color: "#86efac", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
   ],
   FOOTPRINT_GROUPS: [],
   ACTIVITY: [],
@@ -133,25 +131,23 @@ function mapBackendToFrontend(backendData: any) {
       total: Math.round(t.totalKg / 1000),
       scope1: Math.round(t.scope1Kg / 1000),
       scope2: Math.round(t.scope2Kg / 1000),
-      scope3: Math.round(t.scope3Kg / 1000) || 0
     };
   });
 
-  const TOTAL_12M = Math.round(b.overview?.totalEmissionsTonnes || 0);
-  const SCOPE1_12M = Math.round(b.overview?.scope1Tonnes || 0);
-  const SCOPE2_12M = Math.round(b.overview?.scope2Tonnes || 0);
-  const SCOPE3_12M = Math.round(b.overview?.scope3Tonnes || 0);
+  const TOTAL_12M = parseFloat((b.overview?.totalEmissionsTonnes || 0).toFixed(2));
+  const SCOPE1_12M = parseFloat((b.overview?.scope1Tonnes || 0).toFixed(2));
+  const SCOPE2_12M = parseFloat((b.overview?.scope2Tonnes || 0).toFixed(2));
+  const SCOPE3_12M = parseFloat((b.overview?.scope3Tonnes || 0).toFixed(2));
 
   const SCOPES = [
     { key: "scope1", name: "Scope 1 — Direct", value: SCOPE1_12M, share: TOTAL_12M ? SCOPE1_12M / TOTAL_12M : 0, color: "#15803d" },
     { key: "scope2", name: "Scope 2 — Energy", value: SCOPE2_12M, share: TOTAL_12M ? SCOPE2_12M / TOTAL_12M : 0, color: "#22c55e" },
-    { key: "scope3", name: "Scope 3 — Value chain", value: SCOPE3_12M, share: TOTAL_12M ? SCOPE3_12M / TOTAL_12M : 0, color: "#86efac" },
   ];
 
   const CATEGORIES = (b.categories || []).map((c: any) => ({
     name: c.category.replace(/_/g, ' ').toLowerCase(),
     scope: c.scope === "SCOPE_1" ? "S1" : c.scope === "SCOPE_2" ? "S2" : "S3",
-    value: Math.round(c.tonnesCO2e),
+    value: parseFloat((c.tonnesCO2e || 0).toFixed(2)),
     share: TOTAL_12M ? c.tonnesCO2e / TOTAL_12M : 0,
     trend: c.trend || 0,
     sources: 1,
@@ -161,6 +157,7 @@ function mapBackendToFrontend(backendData: any) {
     {
       label: "Total footprint",
       value: TOTAL_12M,
+      decimals: 2,
       suffix: " tCO₂e",
       delta: b.overview?.delta || 0,
       deltaLabel: "vs last 12 months",
@@ -170,6 +167,7 @@ function mapBackendToFrontend(backendData: any) {
     {
       label: "Scope 1 emissions",
       value: SCOPE1_12M,
+      decimals: 2,
       suffix: " tCO₂e",
       delta: TOTAL_12M ? Number((SCOPE1_12M / TOTAL_12M * 100).toFixed(1)) : 0,
       deltaLabel: "share of total",
@@ -179,6 +177,7 @@ function mapBackendToFrontend(backendData: any) {
     {
       label: "Scope 2 emissions",
       value: SCOPE2_12M,
+      decimals: 2,
       suffix: " tCO₂e",
       delta: TOTAL_12M ? Number((SCOPE2_12M / TOTAL_12M * 100).toFixed(1)) : 0,
       deltaLabel: "share of total",
@@ -212,7 +211,7 @@ function mapBackendToFrontend(backendData: any) {
       monthly: MONTHLY.map((m: any) => ({ month: m.month, value: m.scope1 })),
       sources: (b.categories || [])
         .filter((c: any) => c.scope === "SCOPE_1")
-        .map((c: any) => ({ name: c.category, value: Math.round(c.tonnesCO2e), share: SCOPE1_12M ? c.tonnesCO2e / SCOPE1_12M : 0 })),
+        .map((c: any) => ({ name: c.category, value: parseFloat((c.tonnesCO2e || 0).toFixed(2)), share: SCOPE1_12M ? c.tonnesCO2e / SCOPE1_12M : 0 })),
     },
     {
       key: "scope2",
@@ -228,23 +227,7 @@ function mapBackendToFrontend(backendData: any) {
       monthly: MONTHLY.map((m: any) => ({ month: m.month, value: m.scope2 })),
       sources: (b.categories || [])
         .filter((c: any) => c.scope === "SCOPE_2")
-        .map((c: any) => ({ name: c.category, value: Math.round(c.tonnesCO2e), share: SCOPE2_12M ? c.tonnesCO2e / SCOPE2_12M : 0 })),
-    },
-    {
-      key: "scope3",
-      num: "3",
-      name: "Value chain",
-      headline: "All other indirect emissions",
-      description: "Emissions across the full value chain, from purchased goods and travel to how customers use your products.",
-      color: "#86efac",
-      share: TOTAL_12M ? SCOPE3_12M / TOTAL_12M : 0,
-      total: SCOPE3_12M,
-      delta: b.scopeBreakdown?.scope3?.delta || 0,
-      intensity: 0,
-      monthly: MONTHLY.map((m: any) => ({ month: m.month, value: m.scope3 })),
-      sources: (b.categories || [])
-        .filter((c: any) => c.scope === "SCOPE_3")
-        .map((c: any) => ({ name: c.category, value: Math.round(c.tonnesCO2e), share: SCOPE3_12M ? c.tonnesCO2e / SCOPE3_12M : 0 })),
+        .map((c: any) => ({ name: c.category, value: parseFloat((c.tonnesCO2e || 0).toFixed(2)), share: SCOPE2_12M ? c.tonnesCO2e / SCOPE2_12M : 0 })),
     },
   ];
 

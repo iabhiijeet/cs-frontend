@@ -97,10 +97,15 @@ async function requestJson(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(`${apiUrl()}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response;
+  try {
+    response = await fetch(`${apiUrl()}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (err: any) {
+    return { ok: false, status: 503, data: { message: "Network error: Backend server is unreachable." } };
+  }
 
   const text = await response.text();
   let data;

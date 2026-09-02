@@ -52,6 +52,17 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --card: #161616;
+    --card-foreground: #ededed;
+    --popover: #1a1a1a;
+    --popover-foreground: #ededed;
+    --secondary: #1e2a22;
+    --secondary-foreground: #ededed;
+    --muted-bg: #1a1e1b;
+    --muted-foreground: #8a9a90;
+    --accent-muted: #122b1a;
+    --border: rgba(255, 255, 255, 0.12);
+    --input: rgba(255, 255, 255, 0.16);
   }
 }
 
@@ -63,6 +74,44 @@ body {
 
 html {
   scroll-behavior: smooth;
+}
+
+/* ── Onboarding mesh background animation ───────────────────── */
+@keyframes mesh-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.05); }
+  66% { transform: translate(-20px, 30px) scale(0.95); }
+}
+
+.mesh-orb {
+  animation: mesh-float 18s ease-in-out infinite;
+}
+.mesh-orb-delay-1 {
+  animation: mesh-float 22s ease-in-out infinite;
+  animation-delay: -6s;
+}
+.mesh-orb-delay-2 {
+  animation: mesh-float 26s ease-in-out infinite;
+  animation-delay: -12s;
+}
+
+/* ── Premium input focus ───────────────────── */
+.onboarding-shell input:focus,
+.onboarding-shell select:focus,
+.onboarding-shell textarea:focus,
+.onboarding-shell [data-state="open"] > button {
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15), 0 1px 2px rgba(0, 0, 0, 0.06);
+  border-color: var(--primary) !important;
+  outline: none;
+}
+
+/* scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 9999px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -77,3 +126,4 @@ html {
     scroll-behavior: auto;
   }
 }
+

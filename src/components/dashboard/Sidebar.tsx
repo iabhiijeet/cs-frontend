@@ -33,7 +33,7 @@ import Logo from "@/components/ui/Logo";
 import { EASE } from "@/lib/animations";
 import { useAuth } from "@/context/AuthContext";
 
-export type TabId = "overview" | "footprint" | "category" | "scope1" | "scope2" | "scope3" | "activity-data" | "documents" | "review" | "calculations" | "reports" | "team" | "settings" | "reporting-periods" | "emission-factors" | "baseline" | "targets" | "data-quality" | "recommendations" | "notifications" | "audit-logs";
+export type TabId = "overview" | "footprint" | "category" | "scope1" | "scope2" | "activity-data" | "documents" | "review" | "calculations" | "reports" | "team" | "settings" | "reporting-periods" | "emission-factors" | "baseline" | "targets" | "data-quality" | "recommendations" | "notifications" | "audit-logs";
 
 interface NavEntry {
   id: TabId;
@@ -56,7 +56,6 @@ const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
     items: [
       { id: "scope1", label: "Scope 1", Icon: Flame, tint: "#1e40af" },
       { id: "scope2", label: "Scope 2", Icon: Lightning, tint: "#0e7490" },
-      { id: "scope3", label: "Scope 3", Icon: GlobeHemisphereWest, tint: "#4f46e5" },
     ],
   },
   {
@@ -171,7 +170,7 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
         </div>
       </div>
 
-      <nav className="mt-[14px] flex flex-1 flex-col gap-[18px] overflow-y-auto px-[12px]">
+      <nav className="custom-scrollbar mt-[14px] flex flex-1 flex-col gap-[18px] overflow-y-auto px-[12px]">
         {NAV_GROUPS.map((group) => {
           return (
             <div key={group.label}>

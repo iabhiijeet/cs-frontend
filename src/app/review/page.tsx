@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { EASE } from "@/lib/animations";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
-import { getReviewActivities, verifyActivityData, rejectActivityData, calculateEmissions, startReviewActivityData } from "@/lib/api";
+import { getActivityData, verifyActivityData, rejectActivityData, calculateEmissions, startReviewActivityData } from "@/lib/api";
 import { CheckCircle, XCircle, Calculator, Eye, WarningCircle, ArrowRight, MagnifyingGlass } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import CalculationResultModal from "./CalculationResultModal";
@@ -29,7 +29,7 @@ export default function ReviewPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const response = await getReviewActivities();
+      const response = await getActivityData();
       if (response.success && response.data) {
         setData(response.data);
       } else {
@@ -47,15 +47,25 @@ export default function ReviewPage() {
   }, []);
 
   const handleVerify = async (id: string) => {
-    if (!confirm("Approve this activity data? It will be marked as verified.")) return;
+    if (!confirm("Approve this activity data? It will be marked as verified and CO₂e will be calculated.")) return;
     try {
       await verifyActivityData(id);
-      toast.success("Activity verified successfully");
+      toast.success("Activity verified — calculating CO₂e…");
+      // Auto-trigger CO₂e calculation immediately after verification
+      try {
+        const calcRes = await calculateEmissions(id);
+        setCalcResult(calcRes);
+        toast.success("CO₂e calculated successfully");
+      } catch {
+        // Calculation failure is non-fatal — user can retry manually
+        toast.error("CO₂e calculation failed — please retry from the Review panel");
+      }
       fetchData();
     } catch (err: any) {
       toast.error(err.message || "Failed to verify");
     }
   };
+
 
   const handleStartReview = async (id: string) => {
     try {
@@ -98,12 +108,12 @@ export default function ReviewPage() {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "DRAFT": return <span className="flex items-center gap-[4px] rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">âšª Draft</span>;
-      case "SUBMITTED": return <span className="flex items-center gap-[4px] rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700">ðŸŸ¡ Submitted</span>;
-      case "UNDER_REVIEW": return <span className="flex items-center gap-[4px] rounded bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">ðŸŸ  Under Review</span>;
-      case "VERIFIED": return <span className="flex items-center gap-[4px] rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">ðŸŸ¢ Verified</span>;
-      case "REJECTED": return <span className="flex items-center gap-[4px] rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">ðŸ”´ Rejected</span>;
-      case "CALCULATED": return <span className="flex items-center gap-[4px] rounded bg-[#0d3b2d] px-2 py-1 text-xs font-semibold text-white">âœ¨ Calculated</span>;
+      case "DRAFT": return <span className="flex items-center gap-[4px] rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">Draft</span>;
+      case "SUBMITTED": return <span className="flex items-center gap-[4px] rounded bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-700">Submitted</span>;
+      case "UNDER_REVIEW": return <span className="flex items-center gap-[4px] rounded bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-700">Under Review</span>;
+      case "VERIFIED": return <span className="flex items-center gap-[4px] rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">Verified</span>;
+      case "REJECTED": return <span className="flex items-center gap-[4px] rounded bg-red-100 px-2 py-1 text-xs font-semibold text-red-700">Rejected</span>;
+      case "CALCULATED": return <span className="flex items-center gap-[4px] rounded bg-[#0d3b2d] px-2 py-1 text-xs font-semibold text-white">✨ Calculated</span>;
       default: return <span className="rounded bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">{status}</span>;
     }
   };
@@ -190,7 +200,7 @@ export default function ReviewPage() {
                         <th className="px-[16px] py-[12px]">Quantity</th>
                         <th className="px-[16px] py-[12px]">Submitted By</th>
                         <th className="px-[16px] py-[12px]">Status</th>
-                        <th className="px-[16px] py-[12px]">COâ‚‚e</th>
+                        <th className="px-[16px] py-[12px]">CO₂e</th>
                         <th className="px-[16px] py-[12px] text-right">Action</th>
                       </tr>
                     </thead>
@@ -229,7 +239,7 @@ export default function ReviewPage() {
                             <td className="px-[16px] py-[14px] text-[13px] font-semibold text-[#16a34a]">
                               {item.status === "CALCULATED" || item.calculations?.length > 0
                                 ? `${Math.round(item.calculations[0]?.co2eKg || 0)} kg`
-                                : "â€”"}
+                                : "—"}
                             </td>
                             <td className="px-[16px] py-[14px] text-right">
                               <button 

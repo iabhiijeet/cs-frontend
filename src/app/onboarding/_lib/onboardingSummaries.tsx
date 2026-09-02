@@ -138,6 +138,13 @@ export function stepSummary(
       ];
       return out.filter((i) => !i.skip);
     }
+    case "campusStructure": {
+      const ph = data.physicalHierarchy;
+      const count = ph?.campuses?.length || 0;
+      return [
+        { label: "Campuses", value: count.toString() },
+      ];
+    }
   }
 }
 
@@ -360,15 +367,7 @@ export function universityPageSummary(
       { label: "Affiliation", value: u.affiliation },
       { label: "NAAC Grade", value: u.naacGrade },
       { label: "Website", value: u.website },
-    ];
-  }
-  if (pageKey === "company-organization" && u) {
-    return [
       { label: "University Type", value: u.universityType ? u.universityType.charAt(0).toUpperCase() + u.universityType.slice(1) : "" },
-    ];
-  }
-  if (pageKey === "company-financials" && u) {
-    return [
       { label: "Campuses", value: u.campusCount },
       { label: "Students", value: u.studentEnrollment },
       { label: "Staff", value: u.staffCount },

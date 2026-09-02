@@ -16,7 +16,7 @@ import DashboardFilterBar from "@/components/dashboard/DashboardFilterBar";
 import { EASE } from "@/lib/animations";
 import type { TabId } from "@/components/dashboard/Sidebar";
 
-type ScopeKey = "scope1" | "scope2" | "scope3";
+type ScopeKey = "scope1" | "scope2";
 
 const TITLES: Record<TabId, { title: string; subtitle: string }> = {
   overview: { title: "Overview", subtitle: "Carbon footprint at a glance" },
@@ -24,7 +24,6 @@ const TITLES: Record<TabId, { title: string; subtitle: string }> = {
   category: { title: "Emissions by category", subtitle: "Where emissions come from, ranked" },
   scope1: { title: "Scope 1", subtitle: "Direct emissions from owned sources" },
   scope2: { title: "Scope 2", subtitle: "Indirect emissions from energy" },
-  scope3: { title: "Scope 3", subtitle: "Indirect emissions across the value chain" },
   reports: { title: "Reports", subtitle: "Sustainability and audit exports" },
   settings: { title: "Settings", subtitle: "Workspace and team preferences" },
   "activity-data": { title: "Activity Data", subtitle: "Manage your imported activity data" },
@@ -130,7 +129,6 @@ function DashboardContent() {
                   {tab === "category" && <Category />}
                   {tab === "scope1" && <Scope scope={"scope1" as ScopeKey} />}
                   {tab === "scope2" && <Scope scope={"scope2" as ScopeKey} />}
-                  {tab === "scope3" && <Scope scope={"scope3" as ScopeKey} />}
                   {tab === "reports" && <ReportsView />}
                   {tab === "activity-data" && <ActivityDataView />}
                   {tab !== "overview" &&
@@ -138,7 +136,6 @@ function DashboardContent() {
                     tab !== "category" &&
                     tab !== "scope1" &&
                     tab !== "scope2" &&
-                    tab !== "scope3" &&
                     tab !== "reports" &&
                     tab !== "activity-data" && <Placeholder tab={tab} />}
                 </motion.div>

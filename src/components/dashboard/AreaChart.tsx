@@ -28,6 +28,7 @@ function smoothSegments(pts: Pt[]) {
 }
 
 function layerPath(top: Pt[], bottom: Pt[]) {
+  if (!top || top.length === 0 || !bottom || bottom.length === 0) return "";
   const tSegs = smoothSegments(top);
   const bSegs = smoothSegments(bottom);
   let d = `M ${top[0][0].toFixed(1)},${top[0][1].toFixed(1)}`;
@@ -52,7 +53,6 @@ const MODES = [
   { key: "stacked", label: "All scopes" },
   { key: "scope1", label: "Scope 1" },
   { key: "scope2", label: "Scope 2" },
-  { key: "scope3", label: "Scope 3" },
 ];
 
 export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { delay?: number; defaultMode?: string }) {
@@ -75,13 +75,15 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
   const padT = 18;
   const padB = 28;
 
-  const totals = MONTHLY.map((m: any) => m.total);
-  const niceMax = Math.ceil(Math.max(...totals) / 100) * 100;
+  const totals = MONTHLY.length > 0 ? MONTHLY.map((m: any) => m.total || 0) : [0];
+  const maxVal = Math.max(...totals, 0);
+  const niceMax = maxVal > 0 ? Math.ceil(maxVal / 100) * 100 : 100;
   const innerW = Math.max(w - padL - padR, 0);
   const innerH = h - padT - padB;
 
-  const x = (i: number) => padL + (i / (MONTHLY.length - 1)) * innerW;
-  const y = (v: number) => padT + (1 - v / niceMax) * innerH;
+  const len = Math.max(MONTHLY.length - 1, 1);
+  const x = (i: number) => padL + (i / len) * innerW;
+  const y = (v: number) => padT + (1 - (v || 0) / niceMax) * innerH;
   const baseY = padT + innerH;
 
   const cum1 = MONTHLY.map((m: any) => m.scope1);
@@ -92,12 +94,11 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
   const base = MONTHLY.map((_: any, i: number) => [x(i), baseY] as Pt);
 
   const stackedLayers = [
-    { key: "scope3", color: SCOPE_COLORS.scope3, top: pts(cum1), bottom: base, fill: "url(#grad-s3)" },
-    { key: "scope2", color: SCOPE_COLORS.scope2, top: pts(cum2), bottom: pts(cum1), fill: "url(#grad-s2)" },
-    { key: "scope1", color: SCOPE_COLORS.scope1, top: pts(cum3), bottom: pts(cum2), fill: "url(#grad-s1)" },
+    { key: "scope2", color: SCOPE_COLORS.scope2, top: pts(cum1), bottom: base, fill: "url(#grad-s2)" },
+    { key: "scope1", color: SCOPE_COLORS.scope1, top: pts(cum2), bottom: pts(cum1), fill: "url(#grad-s1)" },
   ];
 
-  const single = mode === "stacked" ? null : MONTHLY.map((m: any) => (mode as "scope1" | "scope2" | "scope3") === "scope1" ? m.scope1 : (mode as "scope1" | "scope2" | "scope3") === "scope2" ? m.scope2 : m.scope3);
+  const single = mode === "stacked" ? null : MONTHLY.map((m: any) => mode === "scope1" ? m.scope1 : m.scope2);
   const singleColor = SCOPE_COLORS[mode];
   const singlePts = single ? pts(single) : [];
   const singleArea = single ? layerPath(singlePts, base) : "";
@@ -106,7 +107,8 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
   const handleMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = (e.clientX - rect.left - padL) / (rect.width - padL - padR);
-    const idx = Math.round(ratio * (MONTHLY.length - 1));
+    const len = Math.max(MONTHLY.length - 1, 1);
+    const idx = Math.round(ratio * len);
     setHover(Math.max(0, Math.min(MONTHLY.length - 1, idx)));
   };
 
@@ -286,9 +288,6 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
               </p>
               <p className="flex items-center gap-[6px] text-[11px] text-[#71717a]">
                 <span className="h-[7px] w-[7px] rounded-full" style={{ backgroundColor: SCOPE_COLORS.scope2 }} /> S2 · {hv.scope2}
-              </p>
-              <p className="flex items-center gap-[6px] text-[11px] text-[#71717a]">
-                <span className="h-[7px] w-[7px] rounded-full" style={{ backgroundColor: SCOPE_COLORS.scope3 }} /> S3 · {hv.scope3}
               </p>
             </div>
           </motion.div>

@@ -16,12 +16,10 @@ export default function Category() {
   const SCOPE_FROM_CATEGORIES = (() => {
     const s1 = CATEGORIES.filter((c: any) => c.scope === "S1").reduce((a: number, c: any) => a + c.value, 0);
     const s2 = CATEGORIES.filter((c: any) => c.scope === "S2").reduce((a: number, c: any) => a + c.value, 0);
-    const s3 = CATEGORIES.filter((c: any) => c.scope === "S3").reduce((a: number, c: any) => a + c.value, 0);
-    const total = s1 + s2 + s3 || 1; // avoid division by zero
+    const total = s1 + s2 || 1;
     return [
       { key: "scope1", name: "Scope 1 — Direct", value: s1, share: s1 / total, color: "#3730a3" },
       { key: "scope2", name: "Scope 2 — Energy", value: s2, share: s2 / total, color: "#4f46e5" },
-      { key: "scope3", name: "Scope 3 — Value chain", value: s3, share: s3 / total, color: "#818cf8" },
     ];
   })();
 
@@ -35,8 +33,8 @@ export default function Category() {
       Icon: Stack,
     },
     {
-      label: "Scope 3 share",
-      value: Math.round(SCOPE_FROM_CATEGORIES[2].share * 100),
+      label: "Scope 2 share",
+      value: Math.round(SCOPE_FROM_CATEGORIES[1].share * 100),
       suffix: "%",
       delta: 0,
       good: false,

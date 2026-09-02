@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE } from "@/lib/animations";
 
@@ -17,6 +18,13 @@ export default function ReportingPeriodsPage() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [fromSetup, setFromSetup] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setFromSetup(!!localStorage.getItem("setup_return"));
+    }
+  }, []);
 
   const fetchData = async () => {
     try {
@@ -63,18 +71,19 @@ export default function ReportingPeriodsPage() {
   });
 
   return (
-    <div className="flex min-h-dvh bg-[#fafafa]">
-        <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={"reporting-periods"} onChange={() => {}} />
+    <div className="flex min-h-dvh flex-row bg-[#fafafa]">
+        {!fromSetup && <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={"reporting-periods"} onChange={() => {}} />}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar 
-            onMenu={() => setMenuOpen(true)} 
+            onMenu={fromSetup ? undefined : () => setMenuOpen(true)} 
             title="Reporting Periods" 
             subtitle="Manage emission data timelines and boundaries" 
           />
 
           <main className="flex-1 px-[20px] py-[24px] md:px-[32px]">
             <div className="mx-auto flex max-w-[1240px] flex-col gap-[16px]">
+
               
               <div className="flex items-center justify-between">
                 <h1 className="text-[18px] font-semibold text-black">All Reporting Periods</h1>

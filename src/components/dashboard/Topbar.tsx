@@ -12,7 +12,7 @@ import { useEffect } from "react";
 const RANGES = ["Last 12 months", "Last 6 months", "Last 3 months", "Year to date"];
 
 interface TopbarProps {
-  onMenu: () => void;
+  onMenu?: () => void;
   title: string;
   subtitle: string;
 }
@@ -54,12 +54,14 @@ export default function Topbar({ onMenu, title, subtitle }: TopbarProps) {
       className="sticky top-0 z-30 flex h-[60px] items-center justify-between gap-[16px] border-b border-black/[0.06] bg-[#fafafa]/85 px-[20px] backdrop-blur-md md:px-[32px]"
     >
       <div className="flex min-w-0 items-center gap-[12px]">
-        <button
-          onClick={onMenu}
-          className="flex items-center justify-center rounded-[8px] p-[6px] text-[#71717a] hover:bg-black/[0.04] hover:text-black lg:hidden"
-        >
-          <List size={20} />
-        </button>
+        {onMenu && (
+          <button
+            onClick={onMenu}
+            className="flex items-center justify-center rounded-[8px] p-[6px] text-[#71717a] hover:bg-black/[0.04] hover:text-black lg:hidden"
+          >
+            <List size={20} />
+          </button>
+        )}
         <div className="min-w-0">
           <div className="flex items-center gap-[8px]">
             <h1 className="truncate text-[15px] font-semibold tracking-[-0.2px] text-black">{title}</h1>

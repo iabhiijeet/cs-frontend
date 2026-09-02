@@ -224,7 +224,7 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
         <div className="flex-1">
           <h3 className="text-[15px] font-semibold tracking-tight text-indigo-900">Automated Insights Active</h3>
           <p className="mt-[4px] text-[14px] leading-relaxed text-indigo-700/80">
-            Your Scope 3 emissions have spiked by 12% this month, primarily driven by <strong>Business Travel</strong>. We've auto-generated new recommendations to help you address this anomaly.
+            Your Scope 2 (energy) emissions have spiked this month. We&apos;ve auto-generated new recommendations to help you reduce electricity consumption.
           </p>
         </div>
         <button onClick={() => onNavigate("recommendations")} className="mt-[12px] md:mt-0 w-full md:w-auto shrink-0 rounded-full bg-white px-[16px] py-[8px] text-[13px] font-semibold text-indigo-600 shadow-sm transition-colors hover:bg-indigo-50 border border-indigo-100">

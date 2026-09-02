@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 
 import {
   createOnboarding,
+  createReportingPeriod,
   getOnboardingStatus,
   updateOnboarding,
 } from "@/lib/api";
+import { setupPhysicalHierarchy } from "@/lib/physicalStructureSetup";
 
 import { StepSidebar } from "./StepSidebar";
 import { StepShell } from "./StepShell";
@@ -17,6 +19,7 @@ import { WelcomeScreen } from "./WelcomeScreen";
 import { WorkspaceReady } from "./WorkspaceReady";
 import { CompanyIdentityStep } from "./steps/CompanyIdentityStep";
 import { UniversityIdentityStep } from "./steps/UniversityIdentityStep";
+import { CampusStructureStep } from "./steps/CampusStructureStep";
 import { LocationsOperationsStep } from "./steps/LocationsOperationsStep";
 import { ReportingComplianceStep } from "./steps/ReportingComplianceStep";
 import { DataIntegrationsStep } from "./steps/DataIntegrationsStep";
@@ -270,8 +273,21 @@ export function OnboardingWizard() {
     setSubmitError(null);
 
     // Build payload ensuring physicalHierarchy is always populated
+    // And provide dummy values for required fields that are hidden in the University flow
     const payloadWithHierarchy: OnboardingData = {
       ...data,
+      company: orgType === "university" ? {
+        ...data.company,
+        legalName: data.university?.legalName || "University Default",
+      } : data.company,
+      reporting: orgType === "university" ? {
+        ...data.reporting,
+        deadline: "2099-12-31",
+      } : data.reporting,
+      strategy: orgType === "university" ? {
+        ...data.strategy,
+        contactEmail: "admin@university.local",
+      } : data.strategy,
       physicalHierarchy: data.physicalHierarchy || {
         campuses: [
           {
@@ -305,8 +321,8 @@ export function OnboardingWizard() {
       },
     };
 
-    // Onboarding poora hua — bina kisi extra screen ke seedha dashboard bhejo.
-    const finish = (record?: OnboardingRecord) => {
+    // Onboarding poora hua — physical structure + reporting period set up, phir dashboard.
+    const finish = async (record?: OnboardingRecord) => {
       const allKeys = ACTIVE_PAGES.map((p) => p.key);
       setCompletedPages(allKeys);
       saveOnboarding({
@@ -316,28 +332,80 @@ export function OnboardingWizard() {
         finished: true,
       });
 
-      // Update session with organisationId if returned
-      if (record?.organisationId && typeof window !== "undefined") {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
+      if (typeof window !== "undefined") {
+        // ── Step A: Persist universityId (= organisationId from backend) ─────
+        if (record?.organisationId) {
+          localStorage.setItem("universityId", record.organisationId);
+
+          // Also keep the user object in sync
+          const storedUser = localStorage.getItem("user");
+          if (storedUser) {
+            try {
+              const parsed = JSON.parse(storedUser);
+              parsed.organisationId = record.organisationId;
+              localStorage.setItem("user", JSON.stringify(parsed));
+            } catch {
+              // Ignore parse error
+            }
+          }
+        }
+
+        // ── Step B: Create Campus → Building → Floor structure ───────────────
+        const hierarchy = payloadWithHierarchy.physicalHierarchy;
+        if (hierarchy && record?.organisationId) {
           try {
-            const parsed = JSON.parse(storedUser);
-            parsed.organisationId = record.organisationId;
-            localStorage.setItem("user", JSON.stringify(parsed));
-          } catch (e) {
-            // Ignore parse error
+            await setupPhysicalHierarchy(hierarchy);
+          } catch {
+            // Non-fatal: structure can be set up later via Admin panel
+          }
+        }
+
+        // ── Step C: Auto-create a default Reporting Period ───────────────────
+        if (record?.organisationId) {
+          try {
+            const fiscalYear =
+              (orgType === "university"
+                ? payloadWithHierarchy.university?.fiscalYearEnd
+                : payloadWithHierarchy.company?.fiscalYearEnd) ?? "";
+
+            // Derive a sensible start/end from fiscal year end month (e.g. "March")
+            // Default: April 1 of last year → March 31 of current year (Indian FY)
+            const currentYear = new Date().getFullYear();
+            const defaultStart = `${currentYear - 1}-04-01`;
+            const defaultEnd = `${currentYear}-03-31`;
+
+            const rpRes = await createReportingPeriod({
+              name: fiscalYear
+                ? `FY ${fiscalYear}`
+                : `FY ${currentYear - 1}-${String(currentYear).slice(2)}`,
+              startDate: defaultStart,
+              endDate: defaultEnd,
+            });
+
+            // Persist reportingPeriodId so downstream pages work immediately
+            const rpId =
+              rpRes?.data?.id ??
+              rpRes?.data?._id ??
+              rpRes?.id ??
+              rpRes?._id ??
+              null;
+            if (rpId) {
+              localStorage.setItem("reportingPeriodId", rpId);
+            }
+          } catch {
+            // Non-fatal: user can create a reporting period manually
           }
         }
       }
 
       clearOnboarding();
-      router.replace("/dashboard");
+      router.replace("/setup");
     };
 
     try {
       const created = await createOnboarding(payloadWithHierarchy);
       if (created.kind === "created") {
-        finish(created.record);
+        await finish(created.record);
         return;
       }
       if (created.kind === "error") {
@@ -347,7 +415,7 @@ export function OnboardingWizard() {
       // conflict: profile already exists — update it.
       const updated = await updateOnboarding(payloadWithHierarchy);
       if (updated.kind === "updated") {
-        finish(updated.record);
+        await finish(updated.record);
         return;
       }
       if (updated.kind === "error") {
@@ -466,19 +534,18 @@ export function OnboardingWizard() {
   const stageFirstIndex = page.index - page.substepIndex;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <StepSidebar
-        currentIndex={index}
-        completedPages={completedPages}
-        furthest={furthest}
-        onPageClick={(i) => goTo(i, i > index ? 1 : -1)}
-        savedState={savedState}
-        pages={ACTIVE_PAGES}
-        stageLabels={ACTIVE_STAGE_LABELS}
-        orgType={orgType}
-      />
+    <div className="onboarding-shell relative min-h-screen bg-[#f8faf9] dark:bg-[#0a0e0c] text-foreground selection:bg-primary/20">
+      {/* Animated Background Mesh */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="mesh-orb absolute -left-[10%] top-[-10%] h-[500px] w-[500px] rounded-full bg-emerald-400/15 dark:bg-emerald-500/10 blur-[120px]" />
+        <div className="mesh-orb-delay-1 absolute right-[5%] top-[15%] h-[600px] w-[600px] rounded-full bg-teal-300/15 dark:bg-teal-500/8 blur-[140px]" />
+        <div className="mesh-orb-delay-2 absolute -bottom-[10%] left-[25%] h-[550px] w-[550px] rounded-full bg-green-300/10 dark:bg-green-600/8 blur-[120px]" />
+      </div>
 
-      <main className="lg:pl-[300px]">
+      <div className="relative z-10 flex min-h-screen">
+      {/* Sidebar has been removed as requested */}
+
+      <main className="flex-1">
         {serverBanner}
         <AnimatePresence mode="wait" initial={false} custom={direction}>
           <motion.div
@@ -521,6 +588,15 @@ export function OnboardingWizard() {
               )}
               {currentStepId === "company" && orgType !== "university" && (
                 <CompanyIdentityStep
+                  data={data}
+                  update={update}
+                  err={err}
+                  touch={touch}
+                  section={page.section}
+                />
+              )}
+              {currentStepId === "campusStructure" && (
+                <CampusStructureStep
                   data={data}
                   update={update}
                   err={err}
@@ -586,6 +662,7 @@ export function OnboardingWizard() {
           </motion.div>
         </AnimatePresence>
       </main>
+      </div>
     </div>
   );
 }

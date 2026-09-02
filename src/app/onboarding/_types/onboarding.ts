@@ -142,10 +142,11 @@ export interface OnboardingData {
   intakeRaw?: Record<string, any>;
 }
 
-export type OnboardingKey = "company" | "university" | "locations" | "reporting" | "integrations" | "emissions" | "valueChain" | "strategy";
+export type OnboardingKey = "company" | "university" | "locations" | "reporting" | "integrations" | "emissions" | "valueChain" | "strategy" | "physicalHierarchy";
 
 export type StepId =
   | "company"
+  | "campusStructure"
   | "locations"
   | "reporting"
   | "integrations"

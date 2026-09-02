@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE } from "@/lib/animations";
 
@@ -14,11 +16,19 @@ import ViewActivityModal from "./ViewActivityModal";
 import { useReportingPeriodStatus } from "@/hooks/useReportingPeriodStatus";
 
 export default function ActivityDataPage() {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewActivity, setViewActivity] = useState<any>(null);
+  const [fromSetup, setFromSetup] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setFromSetup(!!localStorage.getItem("setup_return"));
+    }
+  }, []);
 
   const { isLocked } = useReportingPeriodStatus();
 
@@ -81,23 +91,24 @@ export default function ActivityDataPage() {
   };
 
   return (
-    <div className="flex h-screen flex-col bg-[#fafafa]">
-        <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={"activity-data"} onChange={() => {}} />
+    <div className="flex h-screen flex-row bg-[#fafafa]">
+        {!fromSetup && <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active={"activity-data"} onChange={() => {}} />}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <Topbar 
-            onMenu={() => setMenuOpen(true)} 
+            onMenu={fromSetup ? undefined : () => setMenuOpen(true)} 
             title="Activity Data" 
             subtitle="Manage your primary data, invoices, and manual entries" 
           />
 
           <main className="flex-1 px-[20px] py-[24px] md:px-[32px]">
             <div className="mx-auto flex max-w-[1240px] flex-col gap-[16px]">
+
               
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-[16px] mb-[8px]">
                 <div className="flex items-center gap-[8px]">
                   <button 
-                    onClick={() => !isLocked && setIsModalOpen(true)}
+                    onClick={() => !isLocked && router.push("/activity-data/add")}
                     disabled={isLocked}
                     className={`flex items-center gap-[6px] rounded-[8px] px-[12px] py-[8px] text-[13px] font-semibold transition-colors ${
                       isLocked 

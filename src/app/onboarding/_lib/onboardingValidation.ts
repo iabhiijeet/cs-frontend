@@ -20,7 +20,8 @@ export const STEPS: {
 
 export const STEP_INDEX: Record<StepId, number> = {
   company: 0,
-  locations: 1,
+  campusStructure: 1,
+  locations: 2,
   reporting: 2,
   integrations: 3,
   emissions: 4,
@@ -141,7 +142,10 @@ export function validateStep(
 }
 
 export function hasFilledValues(data: OnboardingData, step: StepId): boolean {
-  const group = data[step];
+  if (step === "campusStructure") {
+    return Boolean(data.physicalHierarchy?.campuses?.length);
+  }
+  const group = data[step] as Record<string, any>;
   return Object.values(group).some((v) =>
     Array.isArray(v) ? v.length > 0 : Boolean(v)
   );

@@ -202,6 +202,7 @@ const SEEDS: PageSeed[] = [
 
 const STEP_STAGE: Record<StepId, number> = {
   company: 1,
+  campusStructure: 1,
   locations: 2,
   reporting: 3,
   integrations: 4,

@@ -419,12 +419,12 @@ function DesktopSidebar(props: StepSidebarProps) {
     total: activePages.length,
   };
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[300px] flex-col border-r border-border bg-background lg:flex">
-      <div className="flex h-16 shrink-0 items-center border-b border-border px-5">
+    <aside className="fixed inset-y-0 left-0 z-40 hidden w-[300px] flex-col border-r border-black/[0.06] bg-white/60 backdrop-blur-2xl dark:border-white/[0.08] dark:bg-[#0f1512]/80 lg:flex shadow-[4px_0_24px_-12px_rgba(0,0,0,0.06)]">
+      <div className="flex h-16 shrink-0 items-center border-b border-black/[0.06] dark:border-white/[0.08] px-5">
         <BrandLink />
       </div>
 
-      <div className="shrink-0 border-b border-border">
+      <div className="shrink-0 border-b border-black/[0.06] dark:border-white/[0.08]">
         <ProgressHeader done={progress.done} total={progress.total} />
       </div>
 
@@ -437,8 +437,8 @@ function DesktopSidebar(props: StepSidebarProps) {
         />
       </nav>
 
-      <div className="flex shrink-0 items-center justify-between border-t border-border px-5 py-3.5">
-        <span className="text-xs text-muted-foreground">
+      <div className="flex shrink-0 items-center justify-between border-t border-black/[0.06] dark:border-white/[0.08] px-5 py-3.5">
+        <span className="text-xs text-slate-500 font-medium dark:text-slate-400">
           Autosaved to browser
         </span>
         <SavedBadge state={props.savedState} />
