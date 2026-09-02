@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import AddActivityModal from "@/app/activity-data/AddActivityModal";
 import ImportActivityModal from "@/app/activity-data/ImportActivityModal";
 import ViewActivityModal from "@/app/activity-data/ViewActivityModal";
+import ActivityWorkflowBanner from "@/components/dashboard/ActivityWorkflowBanner";
 import { useReportingPeriodStatus } from "@/hooks/useReportingPeriodStatus";
 import { usePhysicalStructure } from "@/hooks/usePhysicalStructure";
 import Section from "@/components/dashboard/Section";
@@ -222,7 +223,9 @@ export default function ActivityDataView() {
         </div>
       </motion.div>
 
-      {/* â”€â”€ Activity Records Table â”€â”€ */}
+      <ActivityWorkflowBanner draftCount={draftCount} />
+
+      {/* ── Activity Records Table ── */}
       <Section
         title="Activity Log"
         subtitle="Primary activity records with location breakdown"
@@ -303,9 +306,11 @@ export default function ActivityDataView() {
                         <Plus size={24} weight="bold" />
                       </span>
                       <p className="text-[16px] font-bold text-slate-900">Start Building Your Carbon Profile</p>
-                      <p className="text-[13px] text-slate-500 max-w-[320px] mb-4">
-                        Add your first operational activity to begin calculating your university's carbon footprint.
-                      </p>
+                      <div className="text-[13px] text-slate-500 max-w-[380px] mb-4 space-y-2 mt-1">
+                        <p>1. <strong>Add Activity</strong>: Log your operational data.</p>
+                        <p>2. <strong>Submit</strong>: Send it to your admin.</p>
+                        <p>3. <strong>Verify & Calculate</strong>: Your admin verifies it and the system calculates CO₂e.</p>
+                      </div>
                       <div className="flex flex-col gap-2 w-full max-w-[200px]">
                         <button
                           onClick={() => !isLocked && setIsAddOpen(true)}
@@ -381,7 +386,7 @@ export default function ActivityDataView() {
                             <button
                               onClick={() => handleSubmit(item.id)}
                               className="flex items-center gap-[3px] rounded-[6px] bg-indigo-50 px-[8px] py-[4px] text-[11.5px] font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
-                              title="Submit for verification"
+                              title="Submit to admin for CO₂e calculation"
                             >
                               <PaperPlaneRight size={13} weight="bold" />
                               <span>Submit</span>
