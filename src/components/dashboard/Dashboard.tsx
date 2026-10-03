@@ -37,8 +37,22 @@ const TITLES: Record<TabId, { title: string; subtitle: string }> = {
   "data-quality": { title: "Data Quality", subtitle: "Monitor carbon data completeness" },
   recommendations: { title: "Recommendations", subtitle: "Actionable steps to reduce emissions" },
   notifications: { title: "Notifications", subtitle: "System alerts and notifications" },
-  "audit-logs": { title: "Audit Logs", subtitle: "System activity history" },
-  team: { title: "Team", subtitle: "Manage your team" },
+"audit-logs": { title: "Audit Logs", subtitle: "System activity history" },
+  "team": { title: "Team", subtitle: "Manage your team" },
+  // Nav entries that currently render the placeholder view. Listed so the
+  // TITLES map stays exhaustive over TabId and type-checking does not fail.
+  suppliers: { title: "Suppliers", subtitle: "Manage supplier relationships" },
+  initiatives: { title: "Initiatives", subtitle: "Track reduction initiatives" },
+  materiality: { title: "Materiality", subtitle: "Double materiality assessment" },
+  tasks: { title: "Tasks", subtitle: "Assign and track carbon tasks" },
+  voids: { title: "Voids", subtitle: "Voided emissions records" },
+  inventory: { title: "Inventory", subtitle: "Emission inventory by source" },
+  knowledge: { title: "Knowledge Base", subtitle: "Reference and methodology content" },
+  imports: { title: "Imports", subtitle: "Bulk emissions data imports" },
+  "pcf-studies": { title: "PCF Studies", subtitle: "Product carbon footprint studies" },
+  "supplier-requests": { title: "Supplier Requests", subtitle: "Collect supplier activity data" },
+  insights: { title: "Insights", subtitle: "Automated emissions insights" },
+  departments: { title: "Departments", subtitle: "Departmental emission breakdown" },
 };
 
 import { DashboardProvider, useDashboardContext } from "@/hooks/useDashboardContext";

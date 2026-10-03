@@ -3,8 +3,8 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  ArrowLeft, UploadSimple, DownloadSimple, CheckCircle, WarningCircle, FileX 
+import {
+  ArrowLeft, UploadSimple, DownloadSimple, CheckCircle, WarningCircle
 } from "@phosphor-icons/react";
 import { EASE } from "@/lib/animations";
 import { downloadImportTemplate, previewImport, confirmImport } from "@/lib/api";
@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
+import { useReportingPeriodContext } from "@/context/ReportingPeriodContext";
+import { useReportingPeriodStatus } from "@/hooks/useReportingPeriodStatus";
 
 export default function ImportPage() {
   const router = useRouter();
@@ -19,6 +21,11 @@ export default function ImportPage() {
   const [step, setStep] = useState<"UPLOAD" | "PREVIEW">("UPLOAD");
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const { activePeriodId, status: periodStatus, isPeriodReady } =
+    useReportingPeriodContext();
+  const { isLocked } = useReportingPeriodStatus();
   
   // Preview State
   const [previewData, setPreviewData] = useState<any[]>([]);
@@ -29,8 +36,15 @@ export default function ImportPage() {
 
   const handleDownloadTemplate = async () => {
     try {
-      const url = await downloadImportTemplate();
-      window.open(url, "_blank");
+      const blob = await downloadImportTemplate();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "activity-data-template.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
     } catch (err: any) {
       toast.error(err.message || "Failed to download template");
     }
@@ -39,8 +53,17 @@ export default function ImportPage() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0];
     if (!selected) return;
+    if (e.target.value) e.target.value = "";
+    if (!activePeriodId) {
+      toast.error(
+        periodStatus === "empty"
+          ? "No reporting period exists yet. Create one before importing."
+          : "Reporting period is still loading. Please wait a moment."
+      );
+      return;
+    }
     setFile(selected);
-    
+
     try {
       setLoading(true);
       const res = await previewImport(selected);
@@ -49,6 +72,11 @@ export default function ImportPage() {
         setValidationErrors(res.data.invalidRows || []);
         // V2 preview returns data.jobId (NOT importJobId)
         setJobId(res.data.jobId);
+        if (!res.data.jobId) {
+          toast.error("Preview did not return a job id. Re-select the file to try again.");
+          setFile(null);
+          return;
+        }
         setStep("PREVIEW");
       } else {
         toast.error(res.message || "Failed to preview file");
@@ -143,7 +171,30 @@ export default function ImportPage() {
                 transition={{ duration: 0.4, ease: EASE }}
                 className="rounded-[16px] border border-black/[0.08] bg-white p-[32px] shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
               >
-                {step === "UPLOAD" && (
+                {periodStatus === "empty" && (
+                <div className="flex flex-wrap items-center justify-between gap-[12px] rounded-[12px] border border-amber-200 bg-amber-50 px-[16px] py-[12px]">
+                  <p className="text-[13px] font-medium text-amber-800">
+                    No reporting period exists yet. Imported rows must belong to a reporting
+                    period.
+                  </p>
+                  <button
+                    onClick={() => router.push("/reporting-periods")}
+                    className="rounded-[8px] bg-amber-600 px-[12px] py-[6px] text-[12px] font-bold text-white hover:bg-amber-700 transition-colors"
+                  >
+                    Create Reporting Period
+                  </button>
+                </div>
+              )}
+
+              {isLocked && (
+                <div className="rounded-[12px] border border-red-200 bg-red-50 px-[16px] py-[12px]">
+                  <p className="text-[13px] font-medium text-red-700">
+                    This reporting period is locked. Unlock it before importing activity data.
+                  </p>
+                </div>
+              )}
+
+              {step === "UPLOAD" && (
                   <div className="flex flex-col gap-[32px]">
                     <div className="rounded-[12px] border border-[#16a34a]/20 bg-[#f0fdf4] p-[24px] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-[16px]">
                       <div className="flex items-start sm:items-center gap-[16px]">
@@ -165,27 +216,55 @@ export default function ImportPage() {
                       </button>
                     </div>
 
-                    <div className="relative flex flex-col items-center justify-center rounded-[12px] border-2 border-dashed border-black/[0.1] bg-white py-[60px] px-[20px] transition-colors hover:bg-[#fafafa]">
+                    <div
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setDragging(true);
+                      }}
+                      onDragLeave={() => setDragging(false)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragging(false);
+                        const dropped = e.dataTransfer.files?.[0];
+                        if (dropped) {
+                          // Reuse the same validation + preview path as the picker.
+                          handleFileChange({
+                            target: { files: [dropped], value: dropped.name },
+                          } as unknown as React.ChangeEvent<HTMLInputElement>);
+                        }
+                      }}
+                      className={`relative flex flex-col items-center justify-center rounded-[12px] border-2 border-dashed bg-white py-[60px] px-[20px] transition-colors ${
+                        isLocked || !activePeriodId
+                          ? "pointer-events-none opacity-50"
+                          : dragging
+                          ? "border-[#16a34a] bg-[#f0fdf4]"
+                          : "border-black/[0.1] hover:bg-[#fafafa]"
+                      }`}
+                    >
                       <input
                         type="file"
                         accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                         className="absolute inset-0 z-10 cursor-pointer opacity-0"
                         onChange={handleFileChange}
                         ref={fileInputRef}
-                        disabled={loading}
+                        disabled={loading || isLocked || !activePeriodId}
                       />
                       <div className="flex h-[64px] w-[64px] items-center justify-center rounded-full bg-[#fafafa] text-[#52525b] border border-black/[0.08] shadow-sm mb-[20px]">
                         <UploadSimple size={32} weight="bold" />
                       </div>
                       <p className="text-[16px] font-semibold text-black">
-                        {loading ? "Processing file..." : "Drop Excel / CSV here"}
+                        {loading
+                          ? "Processing file..."
+                          : dragging
+                          ? "Drop to upload"
+                          : "Drop Excel / CSV here"}
                       </p>
                       {!loading && (
                         <>
                           <p className="mt-[8px] text-[13px] text-[#71717a] font-medium uppercase tracking-widest">or</p>
-                          <button className="mt-[12px] rounded-[8px] border border-black/[0.08] bg-white px-[20px] py-[8px] text-[13px] font-semibold text-black shadow-sm">
+                          <span className="mt-[12px] rounded-[8px] border border-black/[0.08] bg-white px-[20px] py-[8px] text-[13px] font-semibold text-black shadow-sm">
                             Choose File
-                          </button>
+                          </span>
                         </>
                       )}
                     </div>

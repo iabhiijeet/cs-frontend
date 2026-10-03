@@ -37,6 +37,8 @@ import {
   createAsset,
 } from "@/lib/api";
 import { toast } from "sonner";
+import { useReportingPeriodContext } from "@/context/ReportingPeriodContext";
+import { useReportingPeriodStatus } from "@/hooks/useReportingPeriodStatus";
 
 /* ─── Category Definitions ──────────────────────────────────────────── */
 const CATEGORIES = [
@@ -291,6 +293,15 @@ export default function AddActivityPage() {
   const [dataSource, setDataSource] = useState("Utility Bill");
   const [notes, setNotes] = useState("");
 
+  const { activePeriodId } = useReportingPeriodContext();
+  const { isLocked } = useReportingPeriodStatus();
+
+  // The app-wide active period is the default target; the user can still pick
+  // a different one from the dropdown.
+  useEffect(() => {
+    if (activePeriodId) setPeriodId(activePeriodId);
+  }, [activePeriodId]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -307,19 +318,29 @@ export default function AddActivityPage() {
             const bs = cs[0].buildings || [];
             if (bs.length === 1) {
               setBuildingId(bs[0].id);
-              const fs = bs[0].floors || [];
+              const fs = bs[0].buildings?.[0]?.floors || bs[0].floors || [];
               if (fs.length === 1) setFloorId(fs[0].id);
             }
           }
         }
         if (p.success) {
-          setPeriods(p.data);
-          if (p.data.length === 1) setPeriodId(p.data[0].id);
+          const list = p.data || [];
+          setPeriods(list);
+          // Default to the app-wide active period so the user never has to pick
+          // when there is only one obvious choice (or anything at all).
+          const preferred =
+            list.find((x: any) => x.id === activePeriodId && x.status !== "LOCKED") ||
+            list.find((x: any) => x.id === activePeriodId) ||
+            list.find((x: any) => x.status === "OPEN") ||
+            (list.length === 1 ? list[0] : undefined);
+          if (preferred) setPeriodId(preferred.id);
         }
         if (a.success) setAllAssets(a.data);
-      } catch {}
+      } catch {
+        // Non-fatal: the form still renders and reports missing fields on save.
+      }
     })();
-  }, []);
+  }, [activePeriodId]);
 
   const campuses = hierarchy?.campuses || [];
   const buildings =
@@ -367,6 +388,10 @@ export default function AddActivityPage() {
   };
 
   const handleSave = async (status: "DRAFT" | "SUBMITTED") => {
+    if (isLocked) {
+      toast.error("This reporting period is locked. Unlock it before adding activity data.");
+      return;
+    }
     if (!campusId) {
       toast.error("Please select a Campus / Location");
       return;
@@ -392,13 +417,19 @@ export default function AddActivityPage() {
       return;
     }
 
+    // Never let an unrecognised category be silently mislabelled as Scope 1.
+    if (!selectedCat) {
+      toast.error("Please select a valid Activity Category");
+      return;
+    }
+
     setSaving(true);
     try {
       await createActivityData({
         reportingPeriodId: periodId,
         physicalEntityId: assetId || floorId || buildingId || campusId,
         category,
-        scope: selectedCat?.scope || "SCOPE_1",
+        scope: selectedCat.scope,
         quantity: Number(quantity),
         unit,
         activityDate: new Date(activityDate).toISOString(),

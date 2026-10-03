@@ -1,7 +1,7 @@
 ﻿"use client";
 import { useState } from "react";
 import Link from "next/link";
-import { ShieldCheck, EnvelopSimple, ArrowLeft } from "@phosphor-icons/react";
+import { ShieldCheck, EnvelopeSimple, ArrowLeft } from "@phosphor-icons/react";
 
 export default function SignUpPage() {
   return (

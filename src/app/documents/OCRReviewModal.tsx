@@ -4,7 +4,8 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { X, CheckCircle, Robot, FileText } from "@phosphor-icons/react";
 import { EASE } from "@/lib/animations";
-import { createActivityFromDocument } from "@/lib/api";
+import { createActivityFromDocument, submitActivityData } from "@/lib/api";
+import { useReportingPeriodContext } from "@/context/ReportingPeriodContext";
 import { toast } from "sonner";
 
 interface OCRReviewModalProps {
@@ -13,40 +14,90 @@ interface OCRReviewModalProps {
   onSuccess: () => void;
 }
 
+const CATEGORY_OPTIONS = [
+  { value: "PURCHASED_ELECTRICITY", label: "Electricity", scope: "SCOPE_2" },
+  { value: "PURCHASED_STEAM", label: "Steam / Heat", scope: "SCOPE_2" },
+  { value: "DIESEL", label: "Diesel", scope: "SCOPE_1" },
+  { value: "PETROL", label: "Petrol", scope: "SCOPE_1" },
+  { value: "LPG", label: "LPG / PNG", scope: "SCOPE_1" },
+  { value: "NATURAL_GAS", label: "Natural Gas", scope: "SCOPE_1" },
+  { value: "WATER", label: "Water", scope: "SCOPE_3" },
+  { value: "BUSINESS_TRAVEL", label: "Business Travel", scope: "SCOPE_3" },
+];
+
+/** OCR payloads differ across backend versions; accept either shape. */
+function readExtraction(doc: any) {
+  return doc?.extractedData ?? doc?.extraction ?? null;
+}
+
 export default function OCRReviewModal({ document, onClose, onSuccess }: OCRReviewModalProps) {
   const [loading, setLoading] = useState(false);
-  
+  const [error, setError] = useState("");
+  const { activePeriodId } = useReportingPeriodContext();
+
+  const extraction = readExtraction(document) ?? {};
+  const matchedCategory = CATEGORY_OPTIONS.find(
+    (o) => o.value === extraction.category
+  );
+
   // Pre-fill with OCR extracted data or fallback to defaults
   const [formData, setFormData] = useState({
-    category: document.extractedData?.category || "PURCHASED_ELECTRICITY",
-    scope: document.extractedData?.scope || "SCOPE_2",
-    quantity: document.extractedData?.quantity || "",
-    unit: document.extractedData?.unit || "kWh",
-    activityDate: document.extractedData?.activityDate 
-      ? new Date(document.extractedData.activityDate).toISOString().split("T")[0] 
+    category: matchedCategory?.value ?? extraction.category ?? "PURCHASED_ELECTRICITY",
+    scope: extraction.scope ?? matchedCategory?.scope ?? "SCOPE_2",
+    quantity: extraction.quantity != null ? String(extraction.quantity) : "",
+    unit: extraction.unit ?? "kWh",
+    activityDate: extraction.activityDate
+      ? new Date(extraction.activityDate).toISOString().split("T")[0]
       : new Date().toISOString().split("T")[0],
     description: `Parsed from document: ${document.fileName}`,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
+
+    const quantity = Number(formData.quantity);
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      setError("Please enter a valid positive quantity.");
+      return;
+    }
+    if (!activePeriodId) {
+      setError("No reporting period is selected. Activities cannot be created without one.");
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
-        ...formData,
-        quantity: parseFloat(formData.quantity),
-        activityDate: new Date(formData.activityDate).toISOString(),
+        category: formData.category,
+        scope: formData.scope,
+        quantity,
+        unit: formData.unit,
+        activityDate: formData.activityDate,
+        description: formData.description,
+        inputSource: "INVOICE",
+        status: "SUBMITTED",
+        reportingPeriodId: activePeriodId,
       };
-      
+
       const res = await createActivityFromDocument(document.id, payload);
-      if (res.success) {
-        toast.success("Activity drafted from document successfully");
-        onSuccess();
-      } else {
-        toast.error(res.message || "Failed to create activity");
+      const activityId = res?.data?.id ?? res?.id;
+      if (!activityId) {
+        throw new Error(res?.message || "Failed to create activity");
       }
+
+      // Move it into the review workflow so it reaches the calculations queue.
+      try {
+        await submitActivityData(activityId);
+      } catch {
+        // Activity was created; the transition can be retried from the list.
+      }
+
+      toast.success("Activity created from document and sent for verification");
+      onSuccess();
     } catch (err: any) {
-      toast.error(err.message || "An error occurred");
+      setError(err?.message || "An error occurred");
+      toast.error(err?.message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -82,6 +133,11 @@ export default function OCRReviewModal({ document, onClose, onSuccess }: OCRRevi
         </div>
 
         <div className="flex-1 overflow-y-auto pr-[8px]">
+          {error && (
+            <div className="mb-[16px] rounded-[8px] border border-red-200 bg-red-50 px-[12px] py-[8px] text-[12px] font-medium text-red-700">
+              {error}
+            </div>
+          )}
           <div className="grid grid-cols-[1fr_350px] gap-[24px]">
             
             {/* Left: Document Info */}
@@ -136,13 +192,29 @@ export default function OCRReviewModal({ document, onClose, onSuccess }: OCRRevi
             <form id="ocr-form" onSubmit={handleSubmit} className="flex flex-col gap-[16px]">
               <div className="flex flex-col gap-[6px]">
                 <label className="text-[12px] font-semibold text-[#52525b]">Category</label>
-                <input
+                <select
                   required
-                  type="text"
                   value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    const matched = CATEGORY_OPTIONS.find((o) => o.value === value);
+                    setFormData((f) => ({
+                      ...f,
+                      category: value,
+                      scope: matched?.scope ?? f.scope,
+                    }));
+                  }}
                   className="h-[36px] w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] text-[13px] text-black outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                />
+                >
+                  {CATEGORY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                  {!CATEGORY_OPTIONS.some((o) => o.value === formData.category) && (
+                    <option value={formData.category}>{formData.category}</option>
+                  )}
+                </select>
               </div>
 
               <div className="flex flex-col gap-[6px]">

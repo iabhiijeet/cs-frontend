@@ -20,6 +20,30 @@ function apiUrl(): string {
  */
 export class ContextError extends Error {}
 
+/** HTTP-aware error so callers can branch on 401/403/404. */
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+let unauthorizedHandler: (() => void) | null = null;
+
+/**
+ * Registered by AuthProvider so any 401 anywhere in the app tears down the
+ * stale session instead of leaving the user on a screen that silently fails.
+ */
+export function onUnauthorized(handler: () => void) {
+  unauthorizedHandler = handler;
+}
+
+function handleUnauthorized() {
+  unauthorizedHandler?.();
+}
+
 function getStoredId(key: string): string {
   return typeof window !== "undefined" ? localStorage.getItem(key) || "" : "";
 }
@@ -134,22 +158,26 @@ async function requestJson(
 }
 
 /**
- * Standard API call: resolves with the parsed body or throws an Error whose
- * message carries the most specific backend-provided explanation.
+ * Standard API call: resolves with the parsed body or throws an ApiError whose
+ * message carries the most specific backend-provided explanation and whose
+ * `status` lets callers distinguish 401/403/404 without string matching.
  */
 export async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const { ok, status, data } = await requestJson(endpoint, options);
 
-  if (status === 401) {
-    throw new Error(
-      extractApiErrorMessage(data, "Session expired. Please log in again."),
-    );
-  }
-
   if (!ok) {
-    throw new Error(
-      extractApiErrorMessage(data, `API error: ${status}`),
+    const error = new ApiError(
+      status === 401
+        ? extractApiErrorMessage(data, "Session expired. Please log in again.")
+        : extractApiErrorMessage(data, `API error: ${status}`),
+      status
     );
+    if (status === 401) {
+      // Session is dead: clear the credentials so the app cannot keep issuing
+      // doomed requests, and send the user back to sign-in.
+      handleUnauthorized();
+    }
+    throw error;
   }
 
   return data;
@@ -190,62 +218,63 @@ export async function deleteActivityData(id: string) {
 }
 
 // Workflow transitions: live V2 requires universityId in the JSON body (verified).
-export async function submitActivityData(id: string) {
+//
+// These previously fell back to a direct PATCH on ANY error, which silently
+// masked 401/403 and locked-period rejections: a reviewer could "verify" a row
+// in a locked period and be told it succeeded. The fallback is now limited to
+// 404 (endpoint genuinely absent on the deployed backend); every other failure
+// surfaces to the caller.
+async function transitionActivityStatus(
+  id: string,
+  action: "submit" | "start-review" | "verify" | "reject",
+  body: Record<string, unknown>,
+  fallbackStatus: string
+) {
   const { uId } = requireContext();
   try {
-    return await fetchAPI(`/activity-data/${id}/submit`, {
+    return await fetchAPI(`/activity-data/${id}/${action}`, {
       method: "POST",
-      body: JSON.stringify({ universityId: uId }),
+      body: JSON.stringify({ ...body, universityId: uId }),
     });
   } catch (err: any) {
-    return await updateActivityData(id, { status: "SUBMITTED" });
+    const status = err?.status;
+    if (status !== 404) throw err;
+    return updateActivityData(id, { status: fallbackStatus });
   }
+}
+
+export async function submitActivityData(id: string) {
+  return transitionActivityStatus(id, "submit", {}, "SUBMITTED");
 }
 
 export async function startReviewActivityData(id: string) {
-  const { uId } = requireContext();
-  try {
-    return await fetchAPI(`/activity-data/${id}/start-review`, {
-      method: "POST",
-      body: JSON.stringify({ universityId: uId }),
-    });
-  } catch (err: any) {
-    return await updateActivityData(id, { status: "UNDER_REVIEW" });
-  }
+  return transitionActivityStatus(id, "start-review", {}, "UNDER_REVIEW");
 }
 
 export async function verifyActivityData(id: string) {
-  const { uId } = requireContext();
-  try {
-    return await fetchAPI(`/activity-data/${id}/verify`, {
-      method: "POST",
-      body: JSON.stringify({ universityId: uId }),
-    });
-  } catch (err: any) {
-    return await updateActivityData(id, { status: "VERIFIED" });
-  }
+  return transitionActivityStatus(id, "verify", {}, "VERIFIED");
 }
 
 export async function rejectActivityData(id: string, reason: string) {
-  const { uId } = requireContext();
-  try {
-    return await fetchAPI(`/activity-data/${id}/reject`, {
-      method: "POST",
-      body: JSON.stringify({ reason, universityId: uId }),
-    });
-  } catch (err: any) {
-    return await updateActivityData(id, { status: "REJECTED" });
-  }
+  return transitionActivityStatus(id, "reject", { reason }, "REJECTED");
 }
 
 // ==========================================
 // CALCULATIONS API
 // ==========================================
 export async function calculateEmissions(activityId: string) {
+  const { uId, pId } = requireContext();
   try {
-    return await fetchAPI(`/calculations/activity/${activityId}`, { method: "POST" });
+    return await fetchAPI(`/calculations/activity/${activityId}`, {
+      method: "POST",
+      body: JSON.stringify({ universityId: uId, reportingPeriodId: pId }),
+    });
   } catch (err: any) {
-    return await calculateEmissionsBulk({ activity_data_id: activityId });
+    // Only fall back when the dedicated endpoint is absent. Any other failure
+    // (missing emission factor, out-of-period date, locked period) must reach
+    // the user instead of being reported as "calculation failed" blindly.
+    if (err?.status !== 404) throw err;
+    return calculateEmissionsBulk({ activity_data_id: activityId, universityId: uId, reportingPeriodId: pId });
   }
 }
 
@@ -273,11 +302,30 @@ export async function getReviewActivities() {
 
 
 
-// Import APIs
+/**
+ * Downloads the import template.
+ *
+ * Returns the raw bytes rather than a URL: opening the endpoint with
+ * window.open() cannot attach the Authorization header, so the backend
+ * answered 401 and the template download always failed.
+ */
 export async function downloadImportTemplate() {
   const { uId } = requireContext();
-  // Return URL so user can open in new tab
-  return `${apiUrl()}/activity-data/import/template?universityId=${uId}`;
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const headers = new Headers();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const res = await fetch(`${apiUrl()}/activity-data/import/template?universityId=${uId}`, {
+    headers,
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new ApiError(
+      extractApiErrorMessage(errorData, `Template download failed (${res.status})`),
+      res.status
+    );
+  }
+  return res.blob();
 }
 
 export async function previewImport(file: File) {
@@ -296,12 +344,23 @@ export async function previewImport(file: File) {
     headers,
     body: formData,
   });
-  
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.message || "Failed to preview import");
+
+  const text = await res.text();
+  let data: any = {};
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch {
+    data = { message: text };
   }
-  return res.json();
+
+  if (!res.ok) {
+    if (res.status === 401) handleUnauthorized();
+    throw new ApiError(
+      extractApiErrorMessage(data, `Failed to preview import (${res.status})`),
+      res.status
+    );
+  }
+  return data;
 }
 
 export async function confirmImport(jobId: string, validData: any[]) {

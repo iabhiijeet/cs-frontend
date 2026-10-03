@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import { ReportingPeriodProvider } from "@/context/ReportingPeriodContext";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -27,7 +28,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="min-h-full flex flex-col">
         <AuthProvider>
-          {children}
+          <ReportingPeriodProvider>
+            {children}
+          </ReportingPeriodProvider>
         </AuthProvider>
         <Toaster position="bottom-right" richColors />
       </body>

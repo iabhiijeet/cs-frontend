@@ -44,6 +44,7 @@ import { toast } from "sonner";
 import AddActivityModal from "./AddActivityModal";
 import ViewActivityModal from "./ViewActivityModal";
 import { useReportingPeriodStatus } from "@/hooks/useReportingPeriodStatus";
+import { useReportingPeriodContext } from "@/context/ReportingPeriodContext";
 
 /* â”€â”€â”€ Category Icon & Color Mapping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function getCategoryMeta(category: string) {
@@ -96,6 +97,8 @@ export default function ActivityDataPage() {
   }, []);
 
   const { isLocked } = useReportingPeriodStatus();
+  const { isPeriodReady, activePeriodId, status: periodStatus } =
+    useReportingPeriodContext();
 
   const fetchData = async () => {
     try {
@@ -113,9 +116,12 @@ export default function ActivityDataPage() {
     }
   };
 
+  // Wait for the reporting period to resolve: without it the list request is
+  // not period-scoped and every row shows up against the wrong period.
   useEffect(() => {
+    if (!isPeriodReady) return;
     fetchData();
-  }, []);
+  }, [isPeriodReady, activePeriodId]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this activity entry?")) return;
@@ -247,6 +253,22 @@ export default function ActivityDataPage() {
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
           <div className="mx-auto flex max-w-[1280px] flex-col gap-6">
 
+            {periodStatus === "empty" && (
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm font-medium text-amber-800">
+                  No reporting period exists yet. Activity data must be recorded inside a reporting
+                  period before it can be reviewed or calculated.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => router.push("/reporting-periods")}
+                  className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700 transition-colors"
+                >
+                  Create Reporting Period
+                </button>
+              </div>
+            )}
+
             {/* â”€â”€ Top Header Actions Ribbon â”€â”€ */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
@@ -257,7 +279,6 @@ export default function ActivityDataPage() {
                   Audit-ready primary activity data powering institutional carbon accounting.
                 </p>
               </div>
-
               <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                 {/* Manual Entry */}
                 <button

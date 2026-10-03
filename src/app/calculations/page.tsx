@@ -11,6 +11,7 @@ import { Calculator, Eye, ClockCounterClockwise, LockKey, MagnifyingGlass, Funne
 import { toast } from "sonner";
 import CalculationDetailsModal from "./CalculationDetailsModal";
 import { useReportingPeriodStatus } from "@/hooks/useReportingPeriodStatus";
+import { useReportingPeriodContext } from "@/context/ReportingPeriodContext";
 
 export default function CalculationsPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -19,6 +20,7 @@ export default function CalculationsPage() {
   
   // Locked status hook
   const { isLocked } = useReportingPeriodStatus();
+  const { isPeriodReady, activePeriodId } = useReportingPeriodContext();
 
   // View State
   const [viewActivity, setViewActivity] = useState<any>(null);
@@ -47,8 +49,9 @@ export default function CalculationsPage() {
   };
 
   useEffect(() => {
+    if (!isPeriodReady) return;
     fetchData();
-  }, []);
+  }, [isPeriodReady, activePeriodId]);
 
   const handleCalculate = async (id: string) => {
     try {

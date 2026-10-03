@@ -6,8 +6,15 @@ import { motion, AnimatePresence } from "motion/react";
 import { Bell, CalendarBlank, CaretDown, DownloadSimple, List, MagnifyingGlass, LockKey, CircleNotch, CheckCircle, SignOut } from "@phosphor-icons/react";
 import { EASE } from "@/lib/animations";
 import { useAuth } from "@/context/AuthContext";
+import { useReportingPeriodContext } from "@/context/ReportingPeriodContext";
 import { toast } from "sonner";
-import { getNotifications, getUnreadNotificationsCount, markNotificationAsRead } from "@/lib/api";
+import {
+  getNotifications,
+  getUnreadNotificationsCount,
+  lockReportingPeriod,
+  markNotificationAsRead,
+  openReportingPeriod,
+} from "@/lib/api";
 import { useEffect } from "react";
 
 const RANGES = ["Last 12 months", "Last 6 months", "Last 3 months", "Year to date"];
@@ -22,7 +29,9 @@ export default function Topbar({ onMenu, title, subtitle }: TopbarProps) {
   const [range, setRange] = useState(0);
   const [open, setOpen] = useState(false);
   const { logout } = useAuth();
-  const [isLocked, setIsLocked] = useState(false);
+  const { activePeriod, activePeriodId, isLocked, refresh } =
+    useReportingPeriodContext();
+  const [locking, setLocking] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [recentNotifs, setRecentNotifs] = useState<any[]>([]);
@@ -30,6 +39,42 @@ export default function Topbar({ onMenu, title, subtitle }: TopbarProps) {
   useEffect(() => {
     getUnreadNotificationsCount().then(r => r.success && setUnreadCount(r.data.count)).catch(() => {});
   }, []);
+
+  const handleToggleLock = async () => {
+    if (!activePeriodId || locking) return;
+    if (!activePeriod) {
+      toast.error("Reporting period is still loading. Please wait a moment.");
+      return;
+    }
+
+    const nextLocked = !isLocked;
+    if (nextLocked) {
+      const ok = confirm(
+        "Lock this reporting period? Activities and calculations in it will no longer be editable."
+      );
+      if (!ok) return;
+    } else if (!confirm("Reopen this reporting period for editing?")) {
+      return;
+    }
+
+    setLocking(true);
+    try {
+      const res = nextLocked
+        ? await lockReportingPeriod(activePeriodId)
+        : await openReportingPeriod(activePeriodId);
+      if (res.success) {
+        toast.success(`Reporting period ${nextLocked ? "locked" : "unlocked"}`);
+        // Refresh the shared cache so every screen picks up the new lock state.
+        refresh();
+      } else {
+        toast.error(res.message || "Failed to update reporting period");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update reporting period");
+    } finally {
+      setLocking(false);
+    }
+  };
 
   const fetchNotifs = async () => {
     const res = await getNotifications();
@@ -120,32 +165,33 @@ export default function Topbar({ onMenu, title, subtitle }: TopbarProps) {
           </AnimatePresence>
         </div>
 
-        <button 
-          onClick={() => {
-            const newState = !isLocked;
-            setIsLocked(newState);
-            toast.success(`Reporting period ${newState ? "locked" : "unlocked"} successfully`);
-          }}
-          className={`hidden h-[34px] items-center gap-[6px] rounded-[8px] px-[12px] text-[13px] font-semibold transition-colors md:flex ${
-            isLocked 
-              ? "bg-[#fffbeb] text-[#d97706] border border-[#f59e0b]/20 hover:bg-[#fef3c7]" 
+        <button
+          onClick={handleToggleLock}
+          disabled={locking || !activePeriodId}
+          title={
+            !activePeriodId
+              ? "No reporting period selected"
+              : isLocked
+              ? "Reopen reporting period for editing"
+              : "Lock reporting period"
+          }
+          className={`hidden h-[34px] items-center gap-[6px] rounded-[8px] px-[12px] text-[13px] font-semibold transition-colors disabled:opacity-50 md:flex ${
+            isLocked
+              ? "bg-[#fffbeb] text-[#d97706] border border-[#f59e0b]/20 hover:bg-[#fef3c7]"
               : "bg-white border border-black/[0.06] text-[#52525b] hover:bg-black/5"
           }`}
         >
           <LockKey size={14} weight={isLocked ? "fill" : "regular"} />
-          {isLocked ? "Period Locked" : "Lock Period"}
+          {locking ? "Updating..." : isLocked ? "Period Locked" : "Lock Period"}
         </button>
 
-        <button 
-          onClick={() => {
-            const t = toast.loading("Preparing export...");
-            setTimeout(() => toast.success("Export successful", { id: t }), 1500);
-          }}
+        <Link
+          href="/reports"
           className="hidden h-[34px] items-center gap-[6px] rounded-[8px] bg-slate-900 px-[12px] text-[13px] font-semibold text-white transition-colors hover:bg-slate-700 md:flex"
         >
           <DownloadSimple size={14} />
           Export
-        </button>
+        </Link>
 
         <div className="relative">
           <button 

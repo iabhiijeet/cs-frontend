@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { onUnauthorized } from "@/lib/api";
 
 // DEMO-ONLY auth context backed by the V2 backend's JWT flow.
 // The JWT lives in localStorage under "token"; the raw backend user record
@@ -83,7 +84,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("universityId");
     }
     // A previous session's reporting period must never leak into a new org.
+    // ReportingPeriodProvider re-resolves immediately, so removing it here is
+    // safe and every route (not just the dashboard) gets a fresh period.
     localStorage.removeItem("reportingPeriodId");
+    localStorage.removeItem("reportingPeriodOrgId");
     setToken(newToken);
     setBackendUser(newBackendUser);
   }, []);
@@ -93,9 +97,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("user");
     localStorage.removeItem("universityId");
     localStorage.removeItem("reportingPeriodId");
+    localStorage.removeItem("reportingPeriodOrgId");
     setToken(null);
     setBackendUser(null);
     router.push("/auth/signin");
+  }, [router]);
+
+  // Any 401 from the API layer means the token is dead. Tear the session down
+  // once instead of letting each screen fail with its own confusing error.
+  useEffect(() => {
+    onUnauthorized(() => {
+      // Read storage directly: the setState updater does not run synchronously.
+      if (!localStorage.getItem("token")) return;
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("universityId");
+      localStorage.removeItem("reportingPeriodId");
+      localStorage.removeItem("reportingPeriodOrgId");
+      setToken(null);
+      setBackendUser(null);
+      router.replace("/auth/signin");
+    });
   }, [router]);
 
   const value = useMemo<AuthContextType>(

@@ -38,6 +38,7 @@ import {
 import { toast } from "sonner";
 import CalculationResultModal from "./CalculationResultModal";
 import ReviewDetailsModal from "./ReviewDetailsModal";
+import { useReportingPeriodContext } from "@/context/ReportingPeriodContext";
 
 /* ─── Category Icon & Color Mapping ─────────────────────────────────── */
 function getCategoryMeta(category: string) {
@@ -84,6 +85,8 @@ export default function ReviewPage() {
   const [calcResult, setCalcResult] = useState<any>(null);
   const [viewActivity, setViewActivity] = useState<any>(null);
 
+  const { isPeriodReady, activePeriodId } = useReportingPeriodContext();
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -100,9 +103,12 @@ export default function ReviewPage() {
     }
   };
 
+  // The review queue is period-scoped, so wait for the reporting period to
+  // resolve before loading - otherwise the list is unfiltered.
   useEffect(() => {
+    if (!isPeriodReady) return;
     fetchData();
-  }, []);
+  }, [isPeriodReady, activePeriodId]);
 
   const handleVerify = async (id: string) => {
     if (
@@ -113,18 +119,27 @@ export default function ReviewPage() {
       return;
     try {
       await verifyActivityData(id);
-      try {
-        const calcRes = await calculateEmissions(id);
-        if (calcRes && (calcRes.success || calcRes.data)) {
-          setCalcResult(calcRes.data || calcRes);
-        }
-        toast.success("Activity verified & CO₂e calculated ✅");
-      } catch {
-        toast.success("Activity verified successfully ✅");
-      }
-      fetchData();
     } catch (err: any) {
       toast.error(err.message || "Failed to verify");
+      return;
+    }
+
+    // Calculation runs after a successful verify. Failures are reported
+    // explicitly - previously this catch swallowed the reason and claimed
+    // success, which is why nothing appeared to be calculated.
+    try {
+      const calcRes = await calculateEmissions(id);
+      if (calcRes && (calcRes.success || calcRes.data)) {
+        setCalcResult(calcRes.data || calcRes);
+      }
+      toast.success("Activity verified & CO₂e calculated");
+      fetchData();
+    } catch (calcErr: any) {
+      toast.success("Activity verified");
+      toast.error(
+        calcErr?.message || "Verified, but CO₂e calculation failed. Retry from Calculations."
+      );
+      fetchData();
     }
   };
 

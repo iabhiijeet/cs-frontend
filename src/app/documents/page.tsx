@@ -6,7 +6,7 @@ import { EASE } from "@/lib/animations";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
-import { getDocuments, uploadDocument, ocrDocument, createActivityFromDocument } from "@/lib/api";
+import { getDocuments, uploadDocument, ocrDocument } from "@/lib/api";
 import { UploadSimple, FileText, CheckCircle, WarningCircle, MagicWand, Plus, FilePdf, Funnel, MagnifyingGlass } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import DocumentUploadModal from "./DocumentUploadModal";
@@ -48,7 +48,7 @@ export default function DocumentsPage() {
     try {
       toast.info("Extracting data via OCR...");
       const res = await ocrDocument(id);
-      if (res.success && res.data) {
+      if (res.success) {
         toast.success("OCR extraction complete");
         fetchData();
       } else {
