@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -258,7 +258,7 @@ export default function InvoiceUploadPage() {
         scope: form.scope,
         quantity: Number(form.quantity),
         unit: form.unit,
-        activityDate: form.activityDate,
+        activityDate: new Date(form.activityDate).toISOString(),
         description: form.description,
         inputSource: "INVOICE",
         status: "SUBMITTED",

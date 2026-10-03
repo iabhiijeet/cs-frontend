@@ -73,7 +73,7 @@ export default function OCRReviewModal({ document, onClose, onSuccess }: OCRRevi
         scope: formData.scope,
         quantity,
         unit: formData.unit,
-        activityDate: formData.activityDate,
+        activityDate: new Date(formData.activityDate).toISOString(),
         description: formData.description,
         inputSource: "INVOICE",
         status: "SUBMITTED",
