@@ -50,13 +50,13 @@ export default function SetupProgressBanner({
       {/* ── Top Row: Welcome & Organisation Identity ── */}
       <div className="flex flex-col gap-[16px] md:flex-row md:items-center md:justify-between border-b border-slate-100/80 pb-[20px]">
         <div className="flex items-center gap-[14px]">
-          <div className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br from-indigo-600 to-indigo-800 text-white shadow-[0_4px_16px_rgba(79,70,229,0.25)]">
+          <div className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-[14px] bg-gradient-to-br from-teal-600 to-teal-800 text-white shadow-[0_4px_16px_rgba(13,148,136,0.25)]">
             <Compass size={24} weight="fill" />
           </div>
           <div>
             <div className="flex items-center gap-[8px]">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-600">Welcome to CarbonSynq</span>
-              <span className="rounded-full border border-indigo-100 bg-indigo-50/70 px-[8px] py-[2px] text-[10.5px] font-semibold text-indigo-700">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-teal-700">Welcome to CarbonSynq</span>
+              <span className="rounded-full border border-teal-200 bg-teal-50 px-[8px] py-[2px] text-[10.5px] font-semibold text-teal-800">
                 Setup Complete
               </span>
             </div>
@@ -77,9 +77,9 @@ export default function SetupProgressBanner({
         {/* Campuses Card */}
         <motion.div
           whileHover={{ y: -3 }}
-          className="flex items-center gap-[14px] rounded-[16px] border border-white/60 bg-gradient-to-br from-white/80 to-indigo-50/30 p-[16px] shadow-sm transition-all"
+          className="flex items-center gap-[14px] rounded-[16px] border border-white/60 bg-gradient-to-br from-white/80 to-teal-50/30 p-[16px] shadow-sm transition-all"
         >
-          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[12px] bg-indigo-50 text-indigo-600">
+          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[12px] bg-teal-50 text-teal-700">
             <Buildings size={22} weight="duotone" />
           </div>
           <div>
@@ -93,9 +93,9 @@ export default function SetupProgressBanner({
         {/* Buildings Card */}
         <motion.div
           whileHover={{ y: -3 }}
-          className="flex items-center gap-[14px] rounded-[16px] border border-white/60 bg-gradient-to-br from-white/80 to-purple-50/30 p-[16px] shadow-sm transition-all"
+          className="flex items-center gap-[14px] rounded-[16px] border border-white/60 bg-gradient-to-br from-white/80 to-cyan-50/30 p-[16px] shadow-sm transition-all"
         >
-          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[12px] bg-purple-50 text-purple-600">
+          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[12px] bg-cyan-50 text-cyan-700">
             <Building size={22} weight="duotone" />
           </div>
           <div>
@@ -109,9 +109,9 @@ export default function SetupProgressBanner({
         {/* Floors Card */}
         <motion.div
           whileHover={{ y: -3 }}
-          className="flex items-center gap-[14px] rounded-[16px] border border-white/60 bg-gradient-to-br from-white/80 to-teal-50/30 p-[16px] shadow-sm transition-all"
+          className="flex items-center gap-[14px] rounded-[16px] border border-white/60 bg-gradient-to-br from-white/80 to-emerald-50/30 p-[16px] shadow-sm transition-all"
         >
-          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[12px] bg-teal-50 text-teal-600">
+          <div className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-[12px] bg-emerald-50 text-emerald-700">
             <Stack size={22} weight="duotone" />
           </div>
           <div>
@@ -125,10 +125,10 @@ export default function SetupProgressBanner({
         {/* Next Step Action Card */}
         <motion.div
           whileHover={{ y: -3, scale: 1.01 }}
-          className="flex flex-col justify-between rounded-[16px] border border-indigo-200/70 bg-gradient-to-br from-indigo-600 to-indigo-700 p-[16px] text-white shadow-[0_8px_24px_rgba(79,70,229,0.2)]"
+          className="flex flex-col justify-between rounded-[16px] border border-teal-300/80 bg-gradient-to-br from-teal-600 via-teal-700 to-cyan-700 p-[16px] text-white shadow-[0_8px_24px_rgba(13,148,136,0.2)]"
         >
           <div>
-            <div className="flex items-center gap-[6px] text-[11px] font-semibold uppercase tracking-wider text-indigo-200">
+            <div className="flex items-center gap-[6px] text-[11px] font-semibold uppercase tracking-wider text-teal-100">
               <Sparkle size={13} weight="fill" />
               <span>Next Step</span>
             </div>
@@ -137,7 +137,7 @@ export default function SetupProgressBanner({
 
           <button
             onClick={() => onNavigate("activity-data")}
-            className="mt-[10px] flex items-center justify-center gap-[6px] rounded-[10px] bg-white px-[12px] py-[7px] text-[12px] font-bold text-indigo-700 shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98]"
+            className="mt-[10px] flex items-center justify-center gap-[6px] rounded-[10px] bg-white px-[12px] py-[7px] text-[12px] font-bold text-teal-800 shadow-sm transition-transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
           >
             <PlusCircle size={15} weight="bold" />
             <span>Add Activity Data</span>

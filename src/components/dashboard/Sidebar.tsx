@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import type { ComponentType } from "react";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { getUniversity } from "@/lib/api";
+import { getUniversity, getActivityData } from "@/lib/api";
 import {
   ArrowUpRight,
   ChartBar,
@@ -33,7 +34,7 @@ import Logo from "@/components/ui/Logo";
 import { EASE } from "@/lib/animations";
 import { useAuth } from "@/context/AuthContext";
 
-export type TabId = "overview" | "footprint" | "category" | "scope1" | "scope2" | "activity-data" | "documents" | "review" | "calculations" | "reports" | "team" | "settings" | "reporting-periods" | "emission-factors" | "baseline" | "targets" | "data-quality" | "recommendations" | "notifications" | "audit-logs";
+export type TabId = "overview" | "footprint" | "category" | "scope1" | "scope2" | "activity-data" | "documents" | "review" | "calculations" | "reports" | "team" | "settings" | "reporting-periods" | "emission-factors" | "baseline" | "targets" | "data-quality" | "recommendations" | "notifications" | "audit-logs" | "initiatives" | "suppliers" | "materiality" | "tasks" | "voids" | "inventory" | "knowledge" | "imports" | "pcf-studies" | "supplier-requests" | "insights" | "departments";
 
 interface NavEntry {
   id: TabId;
@@ -54,8 +55,8 @@ const NAV_GROUPS: { label: string; items: NavEntry[] }[] = [
   {
     label: "Carbon",
     items: [
-      { id: "scope1", label: "Scope 1", Icon: Flame, tint: "#1e40af" },
-      { id: "scope2", label: "Scope 2", Icon: Lightning, tint: "#0e7490" },
+      { id: "scope1", label: "Scope 1", Icon: Flame, tint: "#0f766e" },
+      { id: "scope2", label: "Scope 2", Icon: Lightning, tint: "#06b6d4" },
     ],
   },
   {
@@ -83,34 +84,42 @@ const WORKSPACE_FALLBACK = "Workspace";
 interface NavItemProps {
   entry: NavEntry;
   active: boolean;
+  badge?: number;
   onClick: () => void;
 }
 
-function NavItem({ entry, active, onClick }: NavItemProps) {
+function NavItem({ entry, active, badge, onClick }: NavItemProps) {
   const Icon = entry.Icon;
-  const color = entry.tint ?? "#1e40af";
+  const color = entry.tint ?? "#0d9488";
   return (
     <button
       onClick={onClick}
-      className={`relative flex w-full items-center gap-[10px] rounded-[8px] px-[10px] py-[8px] text-[13px] font-medium transition-colors duration-200 ${
-        active ? "text-black" : "text-[#71717a] hover:bg-black/[0.03] hover:text-black"
+      className={`relative flex w-full items-center justify-between rounded-[8px] px-[10px] py-[8px] text-[13px] font-medium transition-colors duration-200 cursor-pointer ${
+        active ? "text-slate-900 font-bold" : "text-[#71717a] hover:bg-slate-50 hover:text-slate-900"
       }`}
     >
       {active && (
         <motion.span
           layoutId="dash-nav"
           transition={{ type: "spring", stiffness: 500, damping: 40 }}
-          className="absolute inset-0 rounded-[8px] border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.05)]"
+          className="absolute inset-0 rounded-[8px] border border-teal-100/80 bg-teal-50/60 shadow-[0_1px_3px_rgba(0,0,0,0.03)]"
         />
       )}
-      <Icon size={16} weight={active ? "fill" : "regular"} className="relative z-10" style={{ color: active ? color : undefined }} />
-      <span className="relative z-10">{entry.label}</span>
-      {active && (
+      <div className="relative z-10 flex items-center gap-[10px]">
+        <Icon size={16} weight={active ? "fill" : "regular"} style={{ color: active ? color : undefined }} />
+        <span>{entry.label}</span>
+      </div>
+
+      {badge && badge > 0 ? (
+        <span className="relative z-10 flex items-center justify-center rounded-full bg-cyan-100 border border-cyan-200 px-1.5 py-0.2 text-[10px] font-black text-cyan-800 tabular-nums">
+          {badge}
+        </span>
+      ) : active ? (
         <span
-          className="absolute right-[10px] top-1/2 h-[5px] w-[5px] -translate-y-1/2 rounded-full"
+          className="relative z-10 h-[5px] w-[5px] rounded-full"
           style={{ backgroundColor: color }}
         />
-      )}
+      ) : null}
     </button>
   );
 }
@@ -123,29 +132,76 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ open, onClose, active, onChange }: SidebarProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
   const [orgName, setOrgName] = useState(WORKSPACE_FALLBACK);
+  const [reviewCount, setReviewCount] = useState<number>(0);
 
-  // Real organisation name from the V2 backend; falls back to a neutral label.
   useEffect(() => {
     let cancelled = false;
     const uId = user?.universityId;
     if (!uId) {
       setOrgName(WORKSPACE_FALLBACK);
-      return;
+    } else {
+      getUniversity(uId)
+        .then((res) => {
+          if (cancelled) return;
+          if (res.success && res.data?.name) setOrgName(res.data.name);
+        })
+        .catch(() => {
+          if (!cancelled) setOrgName(WORKSPACE_FALLBACK);
+        });
     }
-    getUniversity(uId)
+
+    // Fetch review count for badge
+    getActivityData()
       .then((res) => {
         if (cancelled) return;
-        if (res.success && res.data?.name) setOrgName(res.data.name);
+        if (res.success && res.data) {
+          const pending = res.data.filter(
+            (a: any) => a.status === "SUBMITTED" || a.status === "UNDER_REVIEW"
+          ).length;
+          setReviewCount(pending);
+        }
       })
-      .catch(() => {
-        if (!cancelled) setOrgName(WORKSPACE_FALLBACK);
-      });
+      .catch(() => {});
+
     return () => {
       cancelled = true;
     };
   }, [user?.universityId]);
+
+  const DEDICATED_PAGES = [
+    "activity-data",
+    "documents",
+    "review",
+    "calculations",
+    "team",
+    "settings",
+    "reporting-periods",
+    "emission-factors",
+    "baseline",
+    "targets",
+    "data-quality",
+    "recommendations",
+    "reports",
+    "notifications",
+    "audit-logs",
+  ];
+
+  const handleNavClick = (entryId: TabId) => {
+    if (DEDICATED_PAGES.includes(entryId)) {
+      router.push(`/${entryId}`);
+    } else {
+      if (pathname !== "/dashboard" && pathname !== "/") {
+        router.push(`/dashboard?tab=${entryId}`);
+      } else {
+        onChange(entryId);
+      }
+    }
+    onClose();
+  };
 
   const content = (
     <div className="flex h-full w-[252px] flex-col border-r border-black/[0.06] bg-white">
@@ -183,18 +239,8 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
                     key={entry.id}
                     entry={entry}
                     active={active === entry.id}
-                    onClick={() => {
-                      if (["documents", "review", "calculations", "team", "settings", "reporting-periods", "emission-factors", "baseline", "targets", "data-quality", "recommendations", "reports"].includes(entry.id)) {
-                        window.location.href = `/${entry.id}`;
-                      } else {
-                        if (window.location.pathname !== "/dashboard" && window.location.pathname !== "/") {
-                          window.location.href = `/dashboard?tab=${entry.id}`;
-                        } else {
-                          onChange(entry.id);
-                        }
-                      }
-                      onClose();
-                    }}
+                    badge={entry.id === "review" ? reviewCount : undefined}
+                    onClick={() => handleNavClick(entry.id)}
                   />
                 ))}
               </div>
@@ -213,7 +259,7 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
               animate={{ width: "44%" }}
               transition={{ duration: 1.2, ease: EASE, delay: 0.4 }}
               className="h-full rounded-full"
-              style={{ background: "linear-gradient(90deg, #1e3a5f, #0891b2)" }}
+              style={{ background: "linear-gradient(90deg, #0f766e, #06b6d4)" }}
             />
           </div>
           <p className="mt-[8px] text-[11px] leading-snug text-slate-500">−18.6% of −42% target met</p>

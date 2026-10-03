@@ -27,75 +27,80 @@ const SCOPES = [
 
 export default function Scopes() {
   return (
-    <Section id="scopes" narrow>
+    <Section id="scopes" narrow className="relative pt-[48px]! md:pt-[72px]! lg:pt-[96px]!">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[48px] md:h-[72px] lg:h-[96px]"
+        style={{
+          background:
+            "linear-gradient(to bottom, #e4f3ea 0%, rgba(228,243,234,0.6) 55%, transparent 100%)",
+        }}
+      />
       <Reveal>
         <div className="mb-[32px] h-px w-full bg-gradient-to-r from-[#16a34a]/60 via-[#16a34a]/20 to-transparent" />
-        <span className="mb-[20px] block text-[14px] font-semibold uppercase tracking-[0.18em] text-[#16a34a]">
-          Carbon scopes
-        </span>
-        <h2 className="mb-[20px] font-display text-[40px] leading-[0.95] tracking-[-1.28px] text-black md:mb-[24px] md:text-[64px]">
+        <h2 className="mb-[20px] font-display text-[40px] leading-[1.05] tracking-[-1.28px] text-black md:mb-[24px] md:text-[64px]">
           Know where your emissions live
         </h2>
-        <p className="mb-[56px] max-w-[560px] text-[16px] leading-[1.5] tracking-[-0.14px] text-[#848484] md:mb-[80px] md:text-[18px]">
-          The GHG Protocol splits emissions into three scopes. Knowing which is
-          which is the first step to reducing them.
+        <p className="mb-[56px] max-w-[580px] text-[16px] leading-[1.55] tracking-[-0.14px] text-[#6b7280] md:mb-[80px] md:text-[18px]">
+          The GHG Protocol splits emissions into three scopes. Knowing the
+          difference between them is critical to understanding your carbon
+          footprint and how to reduce it.
         </p>
       </Reveal>
 
-        <div className="grid grid-cols-1 gap-[12px] md:grid-cols-3">
-          {SCOPES.map((scope, i) => (
-            <Reveal key={scope.num} delay={0.1 + i * 0.1} className="h-full">
+      <div className="grid grid-cols-1 gap-[16px] md:grid-cols-3 md:gap-[24px]">
+        {SCOPES.map((scope, i) => (
+          <Reveal key={scope.num} delay={0.1 + i * 0.1} className="h-full">
             <div
-              className="group relative flex h-full flex-col overflow-hidden rounded-[16px] border border-[#16a34a]/20 bg-[#0d3b2d] px-[24px] pt-[24px] shadow-[0_18px_50px_rgba(13,59,45,0.25)] transition-all duration-300 hover:-translate-y-[2px] hover:border-[#4ade80]/40 hover:bg-[#114a39] hover:shadow-[0_24px_60px_rgba(13,59,45,0.35)] md:px-[28px] md:pt-[28px]"
+              className="group relative flex h-full flex-col overflow-hidden rounded-[20px] border border-[#16a34a]/20 bg-[#0d3b2d] px-[24px] pt-[24px] shadow-[0_18px_50px_rgba(13,59,45,0.2)] transition-all duration-300 hover:-translate-y-[3px] hover:border-[#4ade80]/40 hover:bg-[#114a39] hover:shadow-[0_24px_60px_rgba(13,59,45,0.3)] md:px-[28px] md:pt-[28px]"
             >
-              <div className="flex items-baseline gap-[12px]">
-                <span className="font-display text-[18px] leading-none text-[#4ade80]">
+              <div className="flex items-baseline gap-[10px]">
+                <span className="font-display text-[16px] font-semibold text-[#4ade80]">
                   {scope.num}
                 </span>
-                <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[#a7f3d0]/60">
+                <span className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#a7f3d0]/70">
                   Scope
                 </span>
               </div>
 
-              <h3 className="mt-[16px] font-display text-[24px] leading-[1.1] tracking-[-0.4px] text-white md:text-[26px]">
+              <h3 className="mt-[16px] font-display text-[26px] leading-[1.1] tracking-[-0.4px] text-white md:text-[28px]">
                 {scope.title}
               </h3>
 
-              <p className="mt-[12px] mb-[16px] flex-1 text-[14px] leading-[1.5] tracking-[-0.14px] text-[#a7f3d0]/80">
+              <p className="mt-[12px] mb-[20px] flex-1 text-[14px] leading-[1.55] tracking-[-0.14px] text-[#a7f3d0]/80">
                 {scope.description}
               </p>
 
-              <div className="relative mx-[-24px] mt-[24px] bg-white px-[24px] pt-[28px] pb-[24px] md:mx-[-28px] md:px-[28px] md:pt-[28px] md:pb-[28px]">
+              <div className="relative mx-[-24px] mt-[20px] bg-[#f4f7f6] px-[24px] pt-[28px] pb-[24px] md:mx-[-28px] md:px-[28px] md:pt-[28px] md:pb-[28px]">
                 <svg
                   viewBox="0 0 400 28"
                   preserveAspectRatio="none"
                   aria-hidden
-                  className="pointer-events-none absolute -top-[28px] right-0 left-0 h-[28px] w-full"
+                  className="pointer-events-none absolute -top-[27px] right-0 left-0 h-[28px] w-full"
                 >
-                  <path d="M0 28 L0 20 C 100 8 300 8 400 20 L400 28 Z" fill="#ffffff" />
+                  <path d="M0 28 L0 20 C 100 8 300 8 400 20 L400 28 Z" fill="#f4f7f6" />
                 </svg>
-                <span className="relative text-[11px] font-semibold uppercase tracking-[0.16em] text-[#16a34a]">
+                <span className="relative text-[11px] font-bold uppercase tracking-[0.18em] text-[#0d9488]">
                   Examples
                 </span>
-                <ul className="mt-[4px]">
+                <ul className="mt-[8px]">
                   {scope.examples.map((example) => (
                     <li
                       key={example}
-                      className="flex items-center gap-[10px] border-t border-black/5 py-[10px] text-[14px] tracking-[-0.14px] text-[#52525b]"
+                      className="flex items-center gap-[10px] border-t border-black/5 py-[10px] text-[14px] font-medium tracking-[-0.14px] text-[#4b5563]"
                     >
-                      <span className="h-[4px] w-[4px] shrink-0 rounded-full bg-[#22c55e] transition-colors duration-300 group-hover:bg-[#16a34a]" />
+                      <span className="h-[4px] w-[4px] shrink-0 rounded-full bg-[#10b981]" />
                       {example}
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
-            </Reveal>
-          ))}
-        </div>
+          </Reveal>
+        ))}
+      </div>
 
       <Reveal delay={0.2}>
-        <div className="mt-[12px] flex items-center gap-[14px] rounded-[16px] border border-black/10 bg-white px-[24px] py-[18px]">
+        <div className="mt-[20px] flex items-center gap-[14px] rounded-[16px] border border-black/10 bg-white px-[24px] py-[18px] shadow-sm">
           <span className="h-[6px] w-[6px] shrink-0 rounded-full bg-[#16a34a]" />
           <p className="text-[14px] leading-[1.4] tracking-[-0.14px] text-[#52525b] md:text-[15px]">
             For most businesses, <span className="font-semibold text-black">Scope 3</span> is

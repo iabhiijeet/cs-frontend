@@ -36,14 +36,25 @@ const PERIOD_ORG_KEY = "reportingPeriodOrgId";
 export function useReportingPeriod(): ReportingPeriodState {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [state, setState] = useState<ReportingPeriodState>({
-    periods: [],
-    activePeriodId: null,
-    status: "idle",
-    error: null,
-  });
-
   const organisationId = user?.universityId ?? null;
+
+  const [state, setState] = useState<ReportingPeriodState>(() => {
+    if (typeof window === "undefined") {
+      return { periods: [], activePeriodId: null, status: "idle", error: null };
+    }
+    const storedPeriodId = localStorage.getItem(PERIOD_KEY);
+    const storedOrg = localStorage.getItem(PERIOD_ORG_KEY);
+    const uId = localStorage.getItem("universityId");
+    if (storedPeriodId && (storedOrg === uId || !storedOrg)) {
+      return {
+        periods: [],
+        activePeriodId: storedPeriodId,
+        status: "ready",
+        error: null,
+      };
+    }
+    return { periods: [], activePeriodId: null, status: "idle", error: null };
+  });
 
   useEffect(() => {
     if (authLoading) return;

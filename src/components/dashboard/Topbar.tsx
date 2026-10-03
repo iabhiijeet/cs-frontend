@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "motion/react";
 import { Bell, CalendarBlank, CaretDown, DownloadSimple, List, MagnifyingGlass, LockKey, CircleNotch, CheckCircle, SignOut } from "@phosphor-icons/react";
 import { EASE } from "@/lib/animations";
@@ -170,7 +171,7 @@ export default function Topbar({ onMenu, title, subtitle }: TopbarProps) {
               >
                 <div className="flex items-center justify-between border-b border-black/[0.06] px-[16px] py-[12px] bg-[#fafafa]">
                   <h3 className="text-[13px] font-semibold text-black">Notifications</h3>
-                  <a href="/notifications" className="text-[11px] font-medium text-[#15803d] hover:underline">View All</a>
+                  <Link href="/notifications" className="text-[11px] font-medium text-[#15803d] hover:underline">View All</Link>
                 </div>
                 
                 <div className="flex max-h-[300px] flex-col overflow-y-auto">

@@ -1,13 +1,70 @@
-/* Green accent scope for the onboarding flow (overrides primary/accent tokens) */
+/* Light-first scope for Onboarding Flow with signature teal accents */
+.onboarding-shell,
 .onboarding-green {
-  --color-primary: #16a34a;
-  --color-primary-hover: #15803d;
-  --color-accent: #16a34a;
-  --color-accent-strong: #15803d;
-  --color-accent-soft: #ecfdf3;
-  --color-accent-softer: #f7fdf9;
-  --color-accent-muted: #ecfdf3;
-  --color-ring: #16a34a;
-  --color-ink-muted: #64748b;
-  --color-hairline: #e6e8ef;
+  --background: #ffffff !important;
+  --foreground: #0f172a !important;
+  --card: #ffffff !important;
+  --card-foreground: #0f172a !important;
+  --popover: #ffffff !important;
+  --popover-foreground: #0f172a !important;
+  --primary: #0d9488 !important;
+  --primary-foreground: #ffffff !important;
+  --secondary: #f0fdfa !important;
+  --secondary-foreground: #0f172a !important;
+  --muted-bg: #f8fafc !important;
+  --muted-foreground: #64748b !important;
+  --accent-muted: #e0f2f1 !important;
+  --border: #e2e8f0 !important;
+  --input: #cbd5e1 !important;
+  --ring: #0d9488 !important;
+  --eco-green: #0d9488 !important;
+  --eco-hover: #0f766e !important;
+  color: #0f172a !important;
+  background-color: #f8fafc;
+}
+
+/* Force light input & dropdown styling inside onboarding */
+.onboarding-shell input,
+.onboarding-green input,
+.onboarding-shell select,
+.onboarding-green select,
+.onboarding-shell textarea,
+.onboarding-green textarea {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.onboarding-shell input:focus,
+.onboarding-green input:focus,
+.onboarding-shell select:focus,
+.onboarding-green select:focus,
+.onboarding-shell textarea:focus,
+.onboarding-green textarea:focus {
+  background-color: #ffffff !important;
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15) !important;
+}
+
+.onboarding-shell input::placeholder,
+.onboarding-green input::placeholder,
+.onboarding-shell textarea::placeholder,
+.onboarding-green textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+.onboarding-shell button[role="combobox"],
+.onboarding-green button[role="combobox"],
+.onboarding-shell [data-slot="select-trigger"],
+.onboarding-green [data-slot="select-trigger"],
+.onboarding-shell button[data-state],
+.onboarding-green button[data-state] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+.onboarding-shell label,
+.onboarding-green label {
+  color: #0f172a !important;
 }

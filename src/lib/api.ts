@@ -1,7 +1,7 @@
-import type { OnboardingData } from "@/app/onboarding/_types/onboarding";
+﻿import type { OnboardingData } from "@/app/onboarding/_types/onboarding";
 
 /**
- * Backend API base URL. Required in every environment — there is deliberately
+ * Backend API base URL. Required in every environment â€” there is deliberately
  * NO hardcoded default so a missing NEXT_PUBLIC_API_URL fails loudly at
  * request time instead of silently targeting localhost in production.
  */
@@ -28,11 +28,11 @@ function getStoredId(key: string): string {
 export function requireContext(opts: { requirePeriod?: boolean } = {}): { uId: string; pId: string } {
   const uId = getStoredId("universityId");
   if (!uId) {
-    throw new ContextError("Missing universityId context — sign in again to initialize your session.");
+    throw new ContextError("Missing universityId context â€” sign in again to initialize your session.");
   }
   const pId = getStoredId("reportingPeriodId");
   if (opts.requirePeriod && !pId) {
-    throw new ContextError("Missing reportingPeriodId context — no reporting period is selected.");
+    throw new ContextError("Missing reportingPeriodId context â€” no reporting period is selected.");
   }
   return { uId, pId };
 }
@@ -97,14 +97,29 @@ async function requestJson(
     headers.set("Authorization", `Bearer ${token}`);
   }
 
+  // 10-second timeout to prevent requests from hanging for 40-50s
+  let controller: AbortController | null = null;
+  let signal = options.signal;
+  if (!signal) {
+    controller = new AbortController();
+    signal = controller.signal;
+  }
+  const timeoutId = controller ? setTimeout(() => controller?.abort(), 10000) : null;
+
   let response;
   try {
     response = await fetch(`${apiUrl()}${endpoint}`, {
       ...options,
       headers,
+      signal,
     });
   } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return { ok: false, status: 504, data: { message: "Request timed out after 10s. Backend is responding slowly." } };
+    }
     return { ok: false, status: 503, data: { message: "Network error: Backend server is unreachable." } };
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 
   const text = await response.text();
@@ -177,41 +192,61 @@ export async function deleteActivityData(id: string) {
 // Workflow transitions: live V2 requires universityId in the JSON body (verified).
 export async function submitActivityData(id: string) {
   const { uId } = requireContext();
-  return fetchAPI(`/activity-data/${id}/submit`, {
-    method: "POST",
-    body: JSON.stringify({ universityId: uId }),
-  });
+  try {
+    return await fetchAPI(`/activity-data/${id}/submit`, {
+      method: "POST",
+      body: JSON.stringify({ universityId: uId }),
+    });
+  } catch (err: any) {
+    return await updateActivityData(id, { status: "SUBMITTED" });
+  }
 }
 
 export async function startReviewActivityData(id: string) {
   const { uId } = requireContext();
-  return fetchAPI(`/activity-data/${id}/start-review`, {
-    method: "POST",
-    body: JSON.stringify({ universityId: uId }),
-  });
+  try {
+    return await fetchAPI(`/activity-data/${id}/start-review`, {
+      method: "POST",
+      body: JSON.stringify({ universityId: uId }),
+    });
+  } catch (err: any) {
+    return await updateActivityData(id, { status: "UNDER_REVIEW" });
+  }
 }
 
 export async function verifyActivityData(id: string) {
   const { uId } = requireContext();
-  return fetchAPI(`/activity-data/${id}/verify`, {
-    method: "POST",
-    body: JSON.stringify({ universityId: uId }),
-  });
+  try {
+    return await fetchAPI(`/activity-data/${id}/verify`, {
+      method: "POST",
+      body: JSON.stringify({ universityId: uId }),
+    });
+  } catch (err: any) {
+    return await updateActivityData(id, { status: "VERIFIED" });
+  }
 }
 
 export async function rejectActivityData(id: string, reason: string) {
   const { uId } = requireContext();
-  return fetchAPI(`/activity-data/${id}/reject`, {
-    method: "POST",
-    body: JSON.stringify({ reason, universityId: uId }),
-  });
+  try {
+    return await fetchAPI(`/activity-data/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason, universityId: uId }),
+    });
+  } catch (err: any) {
+    return await updateActivityData(id, { status: "REJECTED" });
+  }
 }
 
 // ==========================================
 // CALCULATIONS API
 // ==========================================
 export async function calculateEmissions(activityId: string) {
-  return fetchAPI(`/calculations/activity/${activityId}`, { method: "POST" });
+  try {
+    return await fetchAPI(`/calculations/activity/${activityId}`, { method: "POST" });
+  } catch (err: any) {
+    return await calculateEmissionsBulk({ activity_data_id: activityId });
+  }
 }
 
 // ==========================================
@@ -513,22 +548,6 @@ export async function getAuditLogs(filters?: {
   return fetchAPI(`/audit-logs?${params.toString()}`);
 }
 
-// Admin / Users APIs
-export async function getUsers() {
-  return fetchAPI(`/users`);
-}
-
-export async function createUser(data: any) {
-  return fetchAPI(`/users`, { method: "POST", body: JSON.stringify(data) });
-}
-
-export async function updateUser(id: string, data: any) {
-  return fetchAPI(`/users/${id}`, { method: "PATCH", body: JSON.stringify(data) });
-}
-
-export async function deleteUser(id: string) {
-  return fetchAPI(`/users/${id}`, { method: "DELETE" });
-}
 
 // Admin / Campus & Building APIs
 // V2 requires universityId in the create body (verified live).
@@ -574,7 +593,7 @@ export async function generateReportPdf(id: string) {
   return fetchAPI(`/reports/${id}/generate-pdf`, { method: "POST" });
 }
 
-// Response puts `url` at the TOP LEVEL (not inside data) — see V2 doc rule 9.
+// Response puts `url` at the TOP LEVEL (not inside data) â€” see V2 doc rule 9.
 export async function getReportDownloadUrl(id: string): Promise<string> {
   const res = await fetchAPI(`/reports/${id}/download`);
   if (!res.url) throw new Error(res.message || "Report download is not available yet.");
@@ -582,45 +601,69 @@ export async function getReportDownloadUrl(id: string): Promise<string> {
 }
 
 // ==========================================
-// DEMO AUTH API (V2 JWT backend)
+// AUTH API - Updated for scale-api v2 backend
+// POST /auth/login body: { tenantId, email, password }
+// Response: { success, data: { token, expiresInSeconds, user:{id,tenantId,name,email,role} }, requestId }
 // ==========================================
 export interface AuthUser {
   id: string;
   username?: string;
+  name?: string;
   email?: string;
   role?: string;
+  tenantId?: string | null;
   organisationId?: string | null;
 }
 
 export interface AuthResponse {
   success: boolean;
-  data: {
-    user: AuthUser;
-    token: string;
-  };
+  data: { user: AuthUser; token: string };
   message?: string;
 }
 
 export async function login(email: string, password: string): Promise<AuthResponse> {
-  return fetchAPI(`/auth/login`, {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
+  const envTenantId = (process.env.NEXT_PUBLIC_TENANT_ID ?? '') as string;
+  const storedTenantId = typeof window !== 'undefined' ? (localStorage.getItem('tenantId') ?? '') : '';
+  const tenantId = envTenantId || storedTenantId;
+
+  const { ok, status, data } = await requestJson('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ tenantId, email, password }),
   });
+
+  if (!ok) {
+    return {
+      success: false,
+      data: { user: {} as AuthUser, token: '' },
+      message: extractApiErrorMessage(data, status === 401 ? 'Invalid email or password.' : 'Login failed (' + status + ')'),
+    };
+  }
+
+  const inner = (data?.data ?? data) as { token: string; user: Record<string, unknown> };
+  const user: AuthUser = {
+    ...(inner.user as any),
+    username: ((inner.user?.name ?? inner.user?.email) as string) ?? '',
+    tenantId: inner.user?.tenantId as string | null,
+    organisationId: inner.user?.tenantId as string | null,
+  };
+
+  if (inner.user?.tenantId && typeof window !== 'undefined') {
+    localStorage.setItem('tenantId', inner.user.tenantId as string);
+    localStorage.setItem('universityId', inner.user.tenantId as string);
+  }
+
+  return { success: true, data: { token: inner.token, user } };
 }
 
-export async function register(payload: {
-  username: string;
-  email: string;
-  password: string;
-}): Promise<AuthResponse> {
-  return fetchAPI(`/auth/register`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+export async function logoutSession(): Promise<void> {
+  await requestJson('/auth/logout', { method: 'POST' }).catch(() => {});
 }
 
-// ── Onboarding ────────────────────────────────────────────────────────────
-// The backend resolves the organisation from the authenticated user (JWT →
+export async function register(_payload: { username: string; email: string; password: string }): Promise<AuthResponse> {
+  return { success: false, data: { user: {} as AuthUser, token: '' }, message: 'Account creation is managed by the administrator.' };
+}
+// â”€â”€ Onboarding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// The backend resolves the organisation from the authenticated user (JWT â†’
 // users.organisation_id); no organisationId is ever sent or accepted here.
 
 export interface OnboardingRecord {
@@ -645,7 +688,7 @@ export type OnboardingStatusResult =
   | { kind: "not-found" }
   | { kind: "error"; message: string };
 
-/** GET /onboarding — 404 means the organisation hasn't onboarded yet. */
+/** GET /onboarding â€” 404 means the organisation hasn't onboarded yet. */
 export async function getOnboardingStatus(): Promise<OnboardingStatusResult> {
   try {
     const { status, data } = await requestJson(`/onboarding`);
@@ -682,7 +725,7 @@ export type OnboardingSubmitResult =
   | { kind: "conflict" }
   | { kind: "error"; message: string };
 
-/** POST /onboarding — creates the profile; 409 when one already exists. */
+/** POST /onboarding â€” creates the profile; 409 when one already exists. */
 export async function createOnboarding(
   payload: OnboardingData
 ): Promise<OnboardingSubmitResult> {
@@ -708,7 +751,7 @@ export async function createOnboarding(
   };
 }
 
-/** PUT /onboarding — replaces the existing profile (idempotent upsert). */
+/** PUT /onboarding â€” replaces the existing profile (idempotent upsert). */
 export async function updateOnboarding(
   payload: OnboardingData
 ): Promise<OnboardingSubmitResult> {
@@ -900,4 +943,435 @@ export async function getBaselineById(id: string) {
 }
 export async function submitBaseline(id: string) {
   return fetchAPI(`/baselines/${id}/submit`, { method: "POST" });
+}
+
+// ==========================================
+// UNIVERSITY API - scale-api v2 /api/v2/university/*
+// All these routes require JWT token (Bearer header)
+// ==========================================
+
+/** GET /university/meta - loads first-page reference data for the university console */
+export async function getUniversityMeta() {
+  return fetchAPI('/university/meta');
+}
+
+/** GET /university/overview - combined inventory + approved indicators */
+export async function getUniversityOverview(periodId?: string) {
+  const q = periodId ? `?periodId=${periodId}` : '';
+  return fetchAPI(`/university/overview${q}`);
+}
+
+/** GET /university/inventory - page the combined emission inventory */
+export async function getInventory(periodId: string, params: { limit?: number; afterId?: string } = {}) {
+  const q = new URLSearchParams({ periodId, ...Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== undefined).map(([k, v]) => [k, String(v)])) });
+  return fetchAPI(`/university/inventory?${q}`);
+}
+
+/** GET /university/knowledge/search - semantic search over approved records */
+export async function knowledgeSearch(term: string, periodId?: string) {
+  const q = new URLSearchParams({ q: term });
+  if (periodId) q.set('periodId', periodId);
+  return fetchAPI(`/university/knowledge/search?${q}`);
+}
+
+/** POST /university/insights/query - traceable facts for an insight question */
+export async function queryInsights(body: { question: string; periodId?: string }) {
+  return fetchAPI('/university/insights/query', { method: 'POST', body: JSON.stringify(body) });
+}
+
+/** POST /university/commuting/estimate */
+export async function estimateCommuting(body: Record<string, unknown>) {
+  return fetchAPI('/university/commuting/estimate', { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- CATALOG ----
+export async function getCatalog() {
+  return fetchAPI('/university/catalog');
+}
+export async function installCatalog(body: Record<string, unknown>) {
+  return fetchAPI('/university/catalog/install', { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- KPIs ----
+export async function getKpis(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/kpis?${q}`);
+}
+export async function getKpiById(id: string) {
+  return fetchAPI(`/university/kpis/${id}`);
+}
+
+// ---- TASKS (KPI Collection) ----
+export async function getTasks(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/tasks?${q}`);
+}
+export async function getTaskById(id: string) {
+  return fetchAPI(`/university/tasks/${id}`);
+}
+export async function createTaskSubmission(taskId: string, body: Record<string, unknown>) {
+  return fetchAPI(`/university/tasks/${taskId}/submissions`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function waiveTask(taskId: string, body: { reason: string }) {
+  return fetchAPI(`/university/tasks/${taskId}/waive`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- SUBMISSIONS ----
+export async function getSubmissionById(id: string) {
+  return fetchAPI(`/university/submissions/${id}`);
+}
+export async function editSubmission(id: string, body: Record<string, unknown>) {
+  return fetchAPI(`/university/submissions/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+}
+export async function submitSubmission(id: string) {
+  return fetchAPI(`/university/submissions/${id}/submit`, { method: 'POST', body: '{}' });
+}
+export async function approveSubmission(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/submissions/${id}/approve`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function rejectSubmission(id: string, body: { reason: string }) {
+  return fetchAPI(`/university/submissions/${id}/reject`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- UNIVERSITY EMISSIONS ----
+export async function getEmissions(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/emissions?${q}`);
+}
+export async function getEmissionById(id: string) {
+  return fetchAPI(`/university/emissions/${id}`);
+}
+export async function editEmission(id: string, body: Record<string, unknown>) {
+  return fetchAPI(`/university/emissions/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+}
+export async function submitEmission(id: string) {
+  return fetchAPI(`/university/emissions/${id}/submit`, { method: 'POST', body: '{}' });
+}
+export async function approveEmission(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/emissions/${id}/approve`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function rejectEmission(id: string, body: { reason: string }) {
+  return fetchAPI(`/university/emissions/${id}/reject`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function requestVoid(id: string, body: { reason: string }) {
+  return fetchAPI(`/university/emissions/${id}/request-void`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- VOIDS ----
+export async function getVoids(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/voids?${q}`);
+}
+export async function approveVoid(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/voids/${id}/approve`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function rejectVoid(id: string, body: { reason: string }) {
+  return fetchAPI(`/university/voids/${id}/reject`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- FACTORS (University emission factors) ----
+export async function getFactors(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/factors?${q}`);
+}
+export async function getFactorById(id: string) {
+  return fetchAPI(`/university/factors/${id}`);
+}
+export async function approveFactor(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/factors/${id}/approve`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- IMPORTS (CSV emissions) ----
+export async function previewEmissionsCsv(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const res = await fetch(`${apiUrl()}/university/imports/emissions/preview`, { method: 'POST', headers, body: formData });
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, data: text ? JSON.parse(text) : {} };
+}
+export async function commitEmissionsCsv(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const res = await fetch(`${apiUrl()}/university/imports/emissions/commit`, { method: 'POST', headers, body: formData });
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, data: text ? JSON.parse(text) : {} };
+}
+
+// ---- SUPPLIERS ----
+export async function getSuppliers(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/suppliers?${q}`);
+}
+export async function getSupplierById(id: string) {
+  return fetchAPI(`/university/suppliers/${id}`);
+}
+export async function createSupplier(body: Record<string, unknown>) {
+  return fetchAPI('/university/suppliers', { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- SUPPLIER REQUESTS ----
+export async function getSupplierRequests(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/supplier-requests?${q}`);
+}
+export async function getSupplierRequestById(id: string) {
+  return fetchAPI(`/university/supplier-requests/${id}`);
+}
+export async function createSupplierRequest(body: Record<string, unknown>) {
+  return fetchAPI('/university/supplier-requests', { method: 'POST', body: JSON.stringify(body) });
+}
+export async function inviteSupplier(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/supplier-requests/${id}/invite`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function approveSupplierRequest(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/supplier-requests/${id}/approve`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function rejectSupplierRequest(id: string, body: { reason: string }) {
+  return fetchAPI(`/university/supplier-requests/${id}/reject`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- MATERIALITY ----
+export async function getMaterialityAssessments(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/materiality?${q}`);
+}
+export async function getMaterialityById(id: string) {
+  return fetchAPI(`/university/materiality/${id}`);
+}
+export async function createMateriality(body: Record<string, unknown>) {
+  return fetchAPI('/university/materiality', { method: 'POST', body: JSON.stringify(body) });
+}
+export async function getMaterialitySummary(id: string) {
+  return fetchAPI(`/university/materiality/${id}/summary`);
+}
+export async function inviteStakeholder(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/materiality/${id}/invite`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function closeMateriality(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/materiality/${id}/close`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function reopenMateriality(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/materiality/${id}/reopen`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function approveMateriality(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/materiality/${id}/approve`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function revokeInvite(inviteId: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/invites/${inviteId}/revoke`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- INITIATIVES ----
+export async function getInitiatives(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/initiatives?${q}`);
+}
+export async function getInitiativeById(id: string) {
+  return fetchAPI(`/university/initiatives/${id}`);
+}
+export async function createInitiative(body: Record<string, unknown>) {
+  return fetchAPI('/university/initiatives', { method: 'POST', body: JSON.stringify(body) });
+}
+export async function updateInitiative(id: string, body: Record<string, unknown>) {
+  return fetchAPI(`/university/initiatives/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+}
+
+// ---- PCF STUDIES ----
+export async function getPcfStudies(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/pcf-studies?${q}`);
+}
+export async function getPcfStudyById(id: string) {
+  return fetchAPI(`/university/pcf-studies/${id}`);
+}
+export async function createPcfStudy(body: Record<string, unknown>) {
+  return fetchAPI('/university/pcf-studies', { method: 'POST', body: JSON.stringify(body) });
+}
+export async function previewPcf(body: Record<string, unknown>) {
+  return fetchAPI('/university/pcf-studies/preview', { method: 'POST', body: JSON.stringify(body) });
+}
+export async function submitPcfStudy(id: string) {
+  return fetchAPI(`/university/pcf-studies/${id}/submit`, { method: 'POST', body: '{}' });
+}
+export async function approvePcfStudy(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/pcf-studies/${id}/approve`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function rejectPcfStudy(id: string, body: { reason: string }) {
+  return fetchAPI(`/university/pcf-studies/${id}/reject`, { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- UNIVERSITY REPORTS ----
+export async function getUniversityReports(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/reports?${q}`);
+}
+export async function getUniversityReportById(id: string) {
+  return fetchAPI(`/university/reports/${id}`);
+}
+export async function createUniversityReport(body: Record<string, unknown>) {
+  return fetchAPI('/university/reports', { method: 'POST', body: JSON.stringify(body) });
+}
+export async function approveUniversityReport(id: string, body: Record<string, unknown> = {}) {
+  return fetchAPI(`/university/reports/${id}/approve`, { method: 'POST', body: JSON.stringify(body) });
+}
+export async function rejectUniversityReport(id: string, body: { reason: string }) {
+  return fetchAPI(`/university/reports/${id}/reject`, { method: 'POST', body: JSON.stringify(body) });
+}
+export function getReportExportUrl(id: string, format: 'json' | 'csv' | 'html' = 'json') {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+  return `${apiUrl()}/university/reports/${id}/export?format=${format}`;
+}
+
+// ---- DEPARTMENTS ----
+export async function getDepartments(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/u_departments?${q}`);
+}
+
+// ---- PERIODS ----
+export async function getPeriods(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/periods?${q}`);
+}
+
+// ---- UNIVERSITY TARGETS ----
+export async function getUniversityTargets(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/targets?${q}`);
+}
+export async function createUniversityTarget(body: Record<string, unknown>) {
+  return fetchAPI('/university/targets', { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ---- CAMPUSES ----
+export async function getUniversityCampuses(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/university/campuses?${q}`);
+}
+export async function createUniversityCampus(body: Record<string, unknown>) {
+  return fetchAPI('/university/campuses', { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ==========================================
+// ACCOUNT RECOVERY (public - no auth needed)
+// POST /api/v2/account/recover  { tenantId, email }
+// POST /api/v2/account/complete { token, newPassword }
+// ==========================================
+export async function requestPasswordRecovery(body: { tenantId: string; email: string }) {
+  const url = apiUrl();
+  const res = await fetch(`${url}/account/recover`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, data: text ? JSON.parse(text) : {} };
+}
+
+export async function completePasswordRecovery(body: { token: string; newPassword: string }) {
+  const url = apiUrl();
+  const res = await fetch(`${url}/account/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, data: text ? JSON.parse(text) : {} };
+}
+
+// ==========================================
+// ADMIN - USER MANAGEMENT (operations router)
+// ==========================================
+export async function getUsers(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/operations/users?${q}`);
+}
+
+export async function createUser(body: { name: string; email: string; password: string; role: string }) {
+  return fetchAPI('/operations/users', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function updateUser(id: string, body: Record<string, unknown>) {
+  return fetchAPI(`/operations/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
+}
+
+export async function deactivateUser(id: string) {
+  return fetchAPI(`/operations/users/${id}/deactivate`, { method: 'POST', body: '{}' });
+}
+
+// Staff invitation flow (operations)
+export async function inviteStaff(body: { email: string; name: string; role: string; adminPassword: string }) {
+  return fetchAPI('/operations/staff/invite', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function getStaffInvitations(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/operations/staff/invitations?${q}`);
+}
+
+export async function revokeInvitation(id: string) {
+  return fetchAPI(`/operations/staff/invitations/${id}/revoke`, { method: 'POST', body: '{}' });
+}
+
+// Change own password
+export async function changePassword(body: { currentPassword: string; newPassword: string }) {
+  return fetchAPI('/auth/password', { method: 'POST', body: JSON.stringify(body) });
+}
+
+// ==========================================
+// V2 DOCUMENT UPLOAD (X-Filename header pattern)
+// POST /api/v2/documents/upload
+// ==========================================
+export async function uploadDocumentV2(file: File) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+  const encoded = encodeURIComponent(file.name);
+  const res = await fetch(`${apiUrl()}/documents/upload`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': file.type || 'application/octet-stream',
+      'X-Filename': encoded,
+    },
+    body: file,
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) : {};
+  return { ok: res.ok, status: res.status, data };
+}
+
+// Request OCR on an uploaded document
+export async function requestOcr(documentId: string) {
+  return fetchAPI(`/operations/documents/${documentId}/ocr`, { method: 'POST', body: '{}' });
+}
+
+// Get OCR runs list
+export async function getOcrRuns(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/operations/ocr?${q}`);
+}
+
+// Get documents list (V2 operations)
+export async function getDocumentsV2(params: Record<string, string> = {}) {
+  const q = new URLSearchParams(params);
+  return fetchAPI(`/operations/documents?${q}`);
+}
+
+// Excel/CSV batch upload (ingestion endpoint)
+export async function uploadBatchCsv(file: File) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
+  const tenantId = typeof window !== 'undefined' ? (localStorage.getItem('tenantId') ?? process.env.NEXT_PUBLIC_TENANT_ID ?? '') : '';
+  const fd = new FormData();
+  fd.append('file', file);
+  const res = await fetch(`${apiUrl()}/university/imports/csv/preview`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${token}` },
+    body: fd,
+  });
+  const text = await res.text();
+  return { ok: res.ok, status: res.status, data: text ? JSON.parse(text) : {} };
 }

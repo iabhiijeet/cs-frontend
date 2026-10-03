@@ -16,6 +16,9 @@ import type { TabId } from "@/components/dashboard/Sidebar";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
 import { getRecommendations } from "@/lib/api";
 
+import CarbonJourneyStepper from "@/components/dashboard/CarbonJourneyStepper";
+import WelcomeGuideModal from "@/components/dashboard/WelcomeGuideModal";
+
 const GROUP_ICONS: Record<string, string> = {
   airplane: "✈",
   users: "👤",
@@ -24,28 +27,44 @@ const GROUP_ICONS: Record<string, string> = {
   factory: "🏭",
 };
 
-// Bar colors for footprint groups
+// Bar colors for footprint groups (Cyan-Green & Teal palette)
 const GROUP_BAR_COLORS = [
-  "linear-gradient(90deg, #1e3a5f, #2563eb)",
-  "linear-gradient(90deg, #0e4c6e, #0891b2)",
-  "linear-gradient(90deg, #312e81, #6366f1)",
-  "linear-gradient(90deg, #134e4a, #0d9488)",
-  "linear-gradient(90deg, #1e1b4b, #8b5cf6)",
+  "linear-gradient(90deg, #0f766e, #14b8a6)",
+  "linear-gradient(90deg, #0891b2, #06b6d4)",
+  "linear-gradient(90deg, #047857, #10b981)",
+  "linear-gradient(90deg, #0e7490, #22d3ee)",
+  "linear-gradient(90deg, #115e59, #2dd4bf)",
 ];
 
 export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
   const { data: { KPIS, SCOPES, FOOTPRINT_GROUPS, TOTAL_12M } } = useDashboardContext();
 
   const [topRecs, setTopRecs] = useState<any[]>([]);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     getRecommendations({ priority: "HIGH" }).then(r => {
       if (r.success) setTopRecs((r.data || []).slice(0, 3));
     }).catch(() => {});
+
+    // Check if new user
+    if (typeof window !== "undefined") {
+      const seen = localStorage.getItem("carbonsynq_guide_seen");
+      if (!seen) {
+        setGuideOpen(true);
+        localStorage.setItem("carbonsynq_guide_seen", "true");
+      }
+    }
   }, []);
 
   return (
     <div className="flex flex-col gap-[20px] pb-[32px]">
+      {/* ── Carbon Accounting Workflow Stepper ── */}
+      <CarbonJourneyStepper onNavigate={onNavigate} onOpenGuide={() => setGuideOpen(true)} />
+
+      {/* ── First-time Walkthrough Modal ── */}
+      <WelcomeGuideModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
+
       {/* ── KPI Cards ── */}
       <div className="grid grid-cols-1 gap-[16px] sm:grid-cols-2 xl:grid-cols-4">
         {KPIS.map((kpi: any, i: number) => (
@@ -102,10 +121,10 @@ export default function Overview({ onNavigate }: { onNavigate: (tab: TabId) => v
               <button
                 key={rec.id}
                 onClick={() => onNavigate("recommendations")}
-                className="flex flex-col gap-[8px] rounded-[16px] border border-slate-200/60 bg-white p-[20px] text-left hover:border-indigo-200 hover:bg-indigo-50/30 hover:shadow-sm transition-all cursor-pointer"
+                className="flex flex-col gap-[8px] rounded-[16px] border border-slate-200/60 bg-white p-[20px] text-left hover:border-teal-200 hover:bg-teal-50/30 hover:shadow-sm transition-all cursor-pointer"
               >
                 <div className="flex items-center gap-[8px]">
-                  <span className="flex h-[24px] w-[24px] items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
+                  <span className="flex h-[24px] w-[24px] items-center justify-center rounded-full bg-teal-100 text-teal-700">
                     <Sparkle size={12} weight="fill" />
                   </span>
                   <h4 className="text-[14px] font-semibold text-slate-900 line-clamp-1">{rec.title}</h4>

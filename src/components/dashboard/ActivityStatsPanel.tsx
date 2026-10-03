@@ -11,10 +11,10 @@ export default function ActivityStatsPanel({ delay = 0 }: { delay?: number }) {
   const stats = [
     { label: "Total", value: ACTIVITY_STATS.total, icon: <FileText size={16} />, color: "text-slate-500", bg: "bg-slate-100" },
     { label: "Draft", value: ACTIVITY_STATS.draft, icon: <PauseCircle size={16} />, color: "text-slate-400", bg: "bg-slate-50" },
-    { label: "Submitted", value: ACTIVITY_STATS.submitted, icon: <ClockCounterClockwise size={16} />, color: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Submitted", value: ACTIVITY_STATS.submitted, icon: <ClockCounterClockwise size={16} />, color: "text-cyan-700", bg: "bg-cyan-50" },
     { label: "Under Review", value: ACTIVITY_STATS.underReview, icon: <WarningCircle size={16} />, color: "text-amber-600", bg: "bg-amber-50" },
-    { label: "Verified", value: ACTIVITY_STATS.verified, icon: <CheckCircle size={16} />, color: "text-teal-600", bg: "bg-teal-50" },
-    { label: "Calculated", value: ACTIVITY_STATS.calculated, icon: <Calculator size={16} />, color: "text-indigo-600", bg: "bg-indigo-50" },
+    { label: "Verified", value: ACTIVITY_STATS.verified, icon: <CheckCircle size={16} />, color: "text-teal-700", bg: "bg-teal-50" },
+    { label: "Calculated", value: ACTIVITY_STATS.calculated, icon: <Calculator size={16} />, color: "text-emerald-700", bg: "bg-emerald-50" },
     { label: "Rejected", value: ACTIVITY_STATS.rejected, icon: <Prohibit size={16} />, color: "text-red-500", bg: "bg-red-50" },
   ];
 

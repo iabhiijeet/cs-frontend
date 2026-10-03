@@ -53,11 +53,11 @@ function DashboardContent() {
 
   const meta = TITLES[tab];
 
-  if (loading) {
+  if (loading && !data) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-4 text-[#71717a]">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-black/10 border-t-black" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-black/10 border-t-teal-600" />
           <p className="text-sm font-medium">Loading your footprint data...</p>
         </div>
       </div>
@@ -94,9 +94,9 @@ function DashboardContent() {
     <div className="flex min-h-dvh bg-slate-50 relative overflow-hidden">
       {/* ── Premium Atmospheric Background ── */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
-        <div className="absolute -left-[10%] -top-[10%] h-[50%] w-[50%] rounded-full bg-indigo-400/10 blur-[120px]" />
-        <div className="absolute -right-[10%] top-[20%] h-[40%] w-[40%] rounded-full bg-teal-400/10 blur-[120px]" />
-        <div className="absolute bottom-[-10%] left-[20%] h-[40%] w-[50%] rounded-full bg-blue-400/10 blur-[120px]" />
+        <div className="absolute -left-[10%] -top-[10%] h-[50%] w-[50%] rounded-full bg-teal-400/10 blur-[120px]" />
+        <div className="absolute -right-[10%] top-[20%] h-[40%] w-[40%] rounded-full bg-cyan-400/10 blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[20%] h-[40%] w-[50%] rounded-full bg-emerald-400/8 blur-[120px]" />
       </div>
 
       <div className="relative z-10 flex w-full">
@@ -108,8 +108,8 @@ function DashboardContent() {
         <main className="flex-1 px-[20px] py-[24px] md:px-[32px]">
           <div className="mx-auto flex max-w-[1240px] flex-col">
             {fallbackUsed && (
-              <div className="mb-[14px] flex items-center gap-[8px] rounded-[10px] border border-blue-100 bg-blue-50 px-[14px] py-[10px] text-[12px] font-medium text-blue-700">
-                <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-blue-400" />
+              <div className="mb-[14px] flex items-center gap-[8px] rounded-[10px] border border-teal-200 bg-teal-50 px-[14px] py-[10px] text-[12px] font-medium text-teal-800">
+                <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-teal-500" />
                 Showing demo data — no emission data has been imported yet{error ? ` (${error})` : ""}.
               </div>
             )}

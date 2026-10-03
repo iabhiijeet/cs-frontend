@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import Link from "next/link";
 import CountUp from "@/components/dashboard/CountUp";
 import { EASE } from "@/lib/animations";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
@@ -15,9 +16,9 @@ export default function TargetPanel({ delay = 0 }: { delay?: number }) {
         <TargetIcon size={24} className="mb-3 text-slate-300" />
         <p className="text-[13.5px] font-semibold text-slate-800 mb-1">No Targets Set</p>
         <p className="text-[12px] text-slate-500 mb-4">Establish a baseline and set targets to track progress here.</p>
-        <a href="/targets" className="rounded-full bg-slate-900 px-[14px] py-[6px] text-[12px] font-medium text-white hover:bg-slate-700 transition-colors">
+        <Link href="/targets" className="rounded-full bg-slate-900 px-[14px] py-[6px] text-[12px] font-medium text-white hover:bg-slate-700 transition-colors">
           Set Target
-        </a>
+        </Link>
       </div>
     );
   }
@@ -70,7 +71,7 @@ export default function TargetPanel({ delay = 0 }: { delay?: number }) {
             animate={{ width: `${reductionProgress}%` }}
             transition={{ duration: 1.4, ease: EASE, delay: delay + 0.3 }}
             className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg, #1e3a5f, #0891b2)" }}
+            style={{ background: "linear-gradient(90deg, #0f766e, #06b6d4)" }}
           />
         </div>
 

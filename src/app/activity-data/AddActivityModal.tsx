@@ -122,8 +122,28 @@ export default function AddActivityModal({ onClose, onSuccess }: AddActivityModa
   };
 
   const handleSave = async (status: "DRAFT" | "SUBMITTED") => {
-    if (!campusId || !category || !quantity || !unit || !activityDate || !periodId) {
-      toast.error("Please fill all required fields");
+    if (!campusId) {
+      toast.error("Please select a Campus / Location");
+      return;
+    }
+    if (!category) {
+      toast.error("Please select an Activity Category");
+      return;
+    }
+    if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
+      toast.error("Please enter a valid positive quantity");
+      return;
+    }
+    if (!unit) {
+      toast.error("Please specify a unit");
+      return;
+    }
+    if (!activityDate) {
+      toast.error("Please select an Activity Date");
+      return;
+    }
+    if (!periodId) {
+      toast.error("Please select a Reporting Period");
       return;
     }
     
@@ -133,7 +153,7 @@ export default function AddActivityModal({ onClose, onSuccess }: AddActivityModa
         reportingPeriodId: periodId,
         physicalEntityId: assetId || floorId || buildingId || campusId,
         category,
-        scope: CATEGORY_DEFINITIONS[category].scope,
+        scope: CATEGORY_DEFINITIONS[category]?.scope || "SCOPE_1",
         quantity: Number(quantity),
         unit,
         activityDate: new Date(activityDate).toISOString(),
@@ -142,19 +162,9 @@ export default function AddActivityModal({ onClose, onSuccess }: AddActivityModa
         inputSource: dataSource.includes("Manual") ? "MANUAL" : "INVOICE"
       };
 
-      const res = await createActivityData(payload) as any;
-      
-      // Auto-calculate immediately if we got the ID back
-      if (res.success && res.data?.id) {
-        try {
-          await calculateEmissionsBulk({ activity_data_id: res.data.id });
-        } catch (calcErr) {
-          console.error("Calculation failed:", calcErr);
-          toast.warning("Activity saved, but calculation failed.");
-        }
-      }
+      await createActivityData(payload);
 
-      toast.success(status === "SUBMITTED" ? "Activity Submitted for Review" : "Activity Saved as Draft");
+      toast.success(status === "SUBMITTED" ? "Activity Submitted for Review ✅" : "Activity Saved as Draft 📝");
       onSuccess();
     } catch (err: any) {
       toast.error(err.message || "Failed to save activity");

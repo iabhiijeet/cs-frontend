@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { 
   ArrowLeft, UploadSimple, DownloadSimple, CheckCircle, WarningCircle, FileX 
@@ -13,6 +14,7 @@ import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
 
 export default function ImportPage() {
+  const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [step, setStep] = useState<"UPLOAD" | "PREVIEW">("UPLOAD");
   const [loading, setLoading] = useState(false);
@@ -73,7 +75,7 @@ export default function ImportPage() {
       if (res.success) {
         // V2 puts importedRows at the TOP LEVEL of the confirm response.
         toast.success(`Successfully imported ${res.importedRows ?? 0} activities.`);
-        window.location.href = "/activity-data";
+        router.push("/activity-data");
       } else {
         toast.error(res.message || "Import failed");
       }
@@ -129,7 +131,7 @@ export default function ImportPage() {
             <div className="mx-auto flex max-w-[1000px] flex-col gap-[24px]">
               
               <button 
-                onClick={() => window.location.href = "/activity-data"}
+                onClick={() => router.push("/activity-data")}
                 className="flex items-center gap-[6px] text-[13px] font-semibold text-[#52525b] hover:text-black w-fit transition-colors"
               >
                 <ArrowLeft size={16} weight="bold" /> Back to Activity Data

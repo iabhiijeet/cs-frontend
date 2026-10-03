@@ -132,7 +132,7 @@ export default function Hero() {
                 </svg>
               </Link>
               <a
-                href="#how-it-works"
+                href="#scopes"
                 className="inline-flex h-[54px] items-center justify-center gap-[10px] rounded-full border border-black/15 bg-white px-[30px] text-[16px] font-semibold tracking-[-0.16px] text-black transition-all duration-300 hover:border-[#16a34a]/50 hover:text-[#15803d]"
               >
                 Explore More

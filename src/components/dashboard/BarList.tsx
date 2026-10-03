@@ -19,7 +19,7 @@ interface BarListProps {
   color?: string;
 }
 
-export default function BarList({ rows, valueLabel = "tCO₂e", delay = 0, color = "#1e40af" }: BarListProps) {
+export default function BarList({ rows, valueLabel = "tCO₂e", delay = 0, color = "#0d9488" }: BarListProps) {
   const [hover, setHover] = useState<number | null>(null);
   const max = Math.max(...rows.map((r) => r.value));
 
@@ -67,7 +67,7 @@ export default function BarList({ rows, valueLabel = "tCO₂e", delay = 0, color
               transition={{ duration: 1.1, ease: EASE, delay: delay + 0.1 + i * 0.07 }}
               className={`h-full rounded-full transition-colors duration-300 ${hover === i ? "" : ""}`}
               style={{
-                background: hover === i ? "#1e3a5f" : `linear-gradient(90deg, ${color}, #0891b2)`,
+                background: hover === i ? "#0f766e" : `linear-gradient(90deg, ${color}, #06b6d4)`,
               }}
             />
           </div>

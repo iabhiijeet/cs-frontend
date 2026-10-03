@@ -13,6 +13,7 @@ import {
   Rocket,
   Target,
   Users,
+  Sparkle,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -85,37 +86,50 @@ export function WorkspaceReady({
   ];
 
   return (
-    <div className="mx-auto w-full max-w-[720px] px-4 pb-24 pt-14 sm:px-6 sm:pt-20">
+    <div className="mx-auto w-full max-w-[720px] px-4 pb-24 pt-12 sm:px-6 sm:pt-16 font-sans antialiased text-slate-900">
       <div className="text-center">
         <motion.div
           initial={{ scale: 0, rotate: -12 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 220, damping: 14, delay: 0.1 }}
-          className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary shadow-[0_10px_30px_rgba(99,91,255,0.35)]"
+          className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-[0_10px_30px_rgba(13,148,136,0.35)] text-white"
         >
-          <Check className="size-8 text-primary-foreground" strokeWidth={3} />
+          <Check className="size-8 stroke-[3]" />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.4 }}
+          className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-teal-200 bg-teal-50 px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-teal-900"
+        >
+          <Sparkle className="size-3 text-teal-600" />
+          <span>Provisioning Complete</span>
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.4 }}
-          className="mt-6 text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+          className="mt-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl"
         >
-          {displayName} is ready.
+          <span className="bg-gradient-to-r from-teal-600 via-cyan-600 to-sky-600 bg-clip-text text-transparent">
+            {displayName}
+          </span>{" "}
+          is ready.
         </motion.h1>
+
         <motion.p
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.4 }}
-          className="mx-auto mt-3 max-w-md text-[0.9375rem] leading-6 text-muted-foreground"
+          className="mx-auto mt-2.5 max-w-md text-xs sm:text-sm leading-relaxed text-slate-600"
         >
-          Your workspace is configured with your frameworks, emission factors and
-          reporting calendar. Here&apos;s what to do next.
+          Your workspace is configured with your compliance frameworks, emission factors, and accounting calendar.
         </motion.p>
       </div>
 
-      <div className="mt-12 grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mt-10 grid grid-cols-1 gap-3.5 sm:grid-cols-2">
         {tasks.map((task, i) => {
           const Icon = task.icon;
           return (
@@ -124,25 +138,33 @@ export function WorkspaceReady({
               initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 + i * 0.07, duration: 0.35 }}
-              className="group relative flex flex-col rounded-xl border border-border bg-background p-4.5 shadow-sm transition-shadow hover:shadow-md"
+              className="group relative flex flex-col rounded-2xl border border-teal-100/90 bg-white/95 p-4.5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_8px_30px_rgba(13,148,136,0.1)]"
             >
               <div className="flex items-center justify-between gap-2">
                 <span
                   className={
                     task.done
-                      ? "flex size-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600"
-                      : "flex size-9 items-center justify-center rounded-lg bg-accent-muted text-primary"
+                      ? "flex size-9 items-center justify-center rounded-xl bg-teal-600 text-white shadow-2xs"
+                      : "flex size-9 items-center justify-center rounded-xl bg-teal-50 border border-teal-200 text-teal-700"
                   }
                 >
                   <Icon className="size-4.5" />
                 </span>
-                <Badge variant={task.done ? "soft" : "muted"}>{task.tag}</Badge>
+                <span
+                  className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${
+                    task.done
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-800"
+                      : "bg-slate-100 border-slate-200 text-slate-600"
+                  }`}
+                >
+                  {task.tag}
+                </span>
               </div>
-              <h3 className="mt-3 flex items-center gap-1.5 text-[0.9375rem] font-semibold text-foreground">
+              <h3 className="mt-3 flex items-center gap-1.5 text-sm font-bold text-slate-900">
                 {task.title}
-                {task.done && <Check className="size-4 text-emerald-500" strokeWidth={3} />}
+                {task.done && <Check className="size-4 text-teal-600 stroke-[3]" />}
               </h3>
-              <p className="mt-1 text-sm leading-5 text-muted-foreground">
+              <p className="mt-1 text-xs leading-relaxed text-slate-600">
                 {task.description}
               </p>
             </motion.div>
@@ -154,20 +176,31 @@ export function WorkspaceReady({
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.85, duration: 0.35 }}
-        className="mt-12 flex flex-col items-center gap-3"
+        className="mt-10 flex flex-col items-center gap-3"
       >
-        <Button size="lg" onClick={onEnterDashboard} className="min-w-[14rem]">
+        <Button
+          size="lg"
+          onClick={onEnterDashboard}
+          className="h-11 min-w-[15rem] rounded-xl bg-gradient-to-r from-teal-600 via-cyan-600 to-sky-600 text-white font-bold text-sm shadow-[0_8px_25px_rgba(13,148,136,0.3)] hover:from-teal-500 hover:via-cyan-500 hover:to-sky-500 active:scale-[0.99] cursor-pointer"
+        >
           <Rocket className="size-4" />
-          Go to your dashboard
+          <span>Launch Dashboard</span>
           <ArrowRight className="size-4" />
         </Button>
-        <Button variant="ghost" size="lg" onClick={onInvite}>
+
+        <Button
+          variant="ghost"
+          size="lg"
+          onClick={onInvite}
+          className="text-xs font-semibold text-slate-600 hover:text-teal-800"
+        >
           <Users className="size-4" />
-          Invite teammates
+          <span>Invite colleagues</span>
         </Button>
-        <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <FolderKanban className="size-3.5" />
-          We&apos;ve also queued a guided setup checklist inside the workspace.
+
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+          <FolderKanban className="size-3.5 text-teal-600" />
+          Guided setup checklist is available inside the dashboard.
         </p>
       </motion.div>
     </div>

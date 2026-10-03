@@ -534,12 +534,12 @@ export function OnboardingWizard() {
   const stageFirstIndex = page.index - page.substepIndex;
 
   return (
-    <div className="onboarding-shell relative min-h-screen bg-[#f8faf9] dark:bg-[#0a0e0c] text-foreground selection:bg-primary/20">
+    <div className="onboarding-shell relative min-h-screen bg-[#f8fbfb] text-slate-900 selection:bg-teal-500/20">
       {/* Animated Background Mesh */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="mesh-orb absolute -left-[10%] top-[-10%] h-[500px] w-[500px] rounded-full bg-emerald-400/15 dark:bg-emerald-500/10 blur-[120px]" />
-        <div className="mesh-orb-delay-1 absolute right-[5%] top-[15%] h-[600px] w-[600px] rounded-full bg-teal-300/15 dark:bg-teal-500/8 blur-[140px]" />
-        <div className="mesh-orb-delay-2 absolute -bottom-[10%] left-[25%] h-[550px] w-[550px] rounded-full bg-green-300/10 dark:bg-green-600/8 blur-[120px]" />
+        <div className="mesh-orb absolute -left-[10%] top-[-10%] h-[500px] w-[500px] rounded-full bg-teal-400/20 blur-[120px]" />
+        <div className="mesh-orb-delay-1 absolute right-[5%] top-[15%] h-[600px] w-[600px] rounded-full bg-cyan-400/20 blur-[140px]" />
+        <div className="mesh-orb-delay-2 absolute -bottom-[10%] left-[25%] h-[550px] w-[550px] rounded-full bg-emerald-300/15 blur-[120px]" />
       </div>
 
       <div className="relative z-10 flex min-h-screen">

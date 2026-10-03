@@ -6,9 +6,9 @@ import { EASE } from "@/lib/animations";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
 
 const SCOPE_COLORS: Record<string, string> = {
-  scope1: "#1e40af",
-  scope2: "#0e7490",
-  scope3: "#6366f1",
+  scope1: "#0f766e",
+  scope2: "#06b6d4",
+  scope3: "#10b981",
 };
 
 type Pt = [number, number];
@@ -150,16 +150,16 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
           >
             <defs>
               <linearGradient id="grad-s1" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1e40af" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#1e40af" stopOpacity="0.2" />
+                <stop offset="0%" stopColor="#0f766e" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#0f766e" stopOpacity="0.2" />
               </linearGradient>
               <linearGradient id="grad-s2" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#0e7490" stopOpacity="0.75" />
-                <stop offset="100%" stopColor="#0e7490" stopOpacity="0.15" />
+                <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.75" />
+                <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.15" />
               </linearGradient>
               <linearGradient id="grad-s3" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6366f1" stopOpacity="0.6" />
-                <stop offset="100%" stopColor="#6366f1" stopOpacity="0.05" />
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.6" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0.05" />
               </linearGradient>
               <linearGradient id="grad-single" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={singleColor} stopOpacity="0.25" />
@@ -219,7 +219,7 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
               <motion.path
                 d={totalPath}
                 fill="none"
-                stroke="#1e40af"
+                stroke="#0f766e"
                 strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -236,7 +236,7 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
                 y={h - 8}
                 textAnchor="middle"
                 fontSize="10.5"
-                fill={hover === i ? "#1e40af" : "#a1a1aa"}
+                fill={hover === i ? "#0f766e" : "#a1a1aa"}
                 fontWeight={hover === i ? 600 : 400}
                 fontFamily="inherit"
               >
@@ -260,7 +260,7 @@ export default function AreaChart({ delay = 0, defaultMode = "stacked" }: { dela
                   cy={mode === "stacked" ? y(cum3[hover]) : y(single![hover])}
                   r="4.5"
                   fill="#fff"
-                  stroke="#1e40af"
+                  stroke="#0f766e"
                   strokeWidth="2"
                 />
               </g>

@@ -1,34 +1,45 @@
-"use client";
-
+﻿"use client";
 import { motion, AnimatePresence } from "motion/react";
 import { EASE } from "@/lib/animations";
 import { useAuth } from "@/context/AuthContext";
-import { EnvelopeSimple, Plus, Trash, CheckCircle, X, MagnifyingGlass, Funnel } from "@phosphor-icons/react";
+import { EnvelopeSimple, Plus, Trash, CheckCircle, X, MagnifyingGlass, Eye, EyeSlash, Shield, UserCircle } from "@phosphor-icons/react";
 import Topbar from "@/components/dashboard/Topbar";
 import { useEffect, useState } from "react";
-import { getUsers, createUser, deleteUser } from "@/lib/api";
+import { getUsers, createUser, deactivateUser } from "@/lib/api";
+
+const ROLES = [
+  { value: "ADMIN", label: "Admin" },
+  { value: "REVIEWER", label: "Reviewer" },
+  { value: "ENTRY", label: "Data Entry" },
+  { value: "LEADERSHIP", label: "Leadership" },
+];
+
+const ROLE_COLORS: Record<string, string> = {
+  ADMIN: "bg-purple-50 text-purple-700 border-purple-100",
+  REVIEWER: "bg-blue-50 text-blue-700 border-blue-100",
+  ENTRY: "bg-slate-50 text-slate-700 border-slate-200",
+  LEADERSHIP: "bg-amber-50 text-amber-700 border-amber-100",
+};
 
 export default function TeamPage() {
   const { user } = useAuth();
-
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("ALL");
-  
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [formData, setFormData] = useState({ firstName: "", lastName: "", email: "", role: "USER", universityId: "" });
+  const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "ENTRY" });
+  const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       const res = await getUsers();
-      if (res.success) {
-        setUsers(res.data);
-      }
+      const rows = res?.data?.items ?? res?.data ?? [];
+      setUsers(Array.isArray(rows) ? rows : []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -36,311 +47,215 @@ export default function TeamPage() {
     }
   };
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  useEffect(() => { loadUsers(); }, []);
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-    setError("");
-
-    // Use current admin's university if they are UNIVERSITY_ADMIN
-    const payload = { ...formData };
-    if (user?.role === "UNIVERSITY_ADMIN" && user.universityId) {
-      payload.universityId = user.universityId;
-    }
-
+    setSubmitting(true); setError("");
     try {
-      const res = await createUser(payload);
-      if (res.success) {
-        // Show the provisioned password in a blocking alert since we don't have email setup yet
-        if (res.data.provisionedPassword) {
-          alert(`User invited successfully!\n\nIMPORTANT: Their temporary password is:\n\n${res.data.provisionedPassword}\n\nPlease save this and send it to them securely.`);
-        } else {
-          alert("User invited successfully!");
-        }
+      const res = await createUser({
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        role: formData.role,
+      });
+      if (res.ok !== false) {
+        setSuccessMsg(`User "${formData.name}" created successfully!`);
         setIsModalOpen(false);
-        setFormData({ firstName: "", lastName: "", email: "", role: "USER", universityId: "" });
+        setFormData({ name: "", email: "", password: "", role: "ENTRY" });
         loadUsers();
+        setTimeout(() => setSuccessMsg(""), 5000);
       } else {
-        setError(res.message || "Failed to invite user");
+        setError(res.data?.error?.message ?? "Failed to create user.");
       }
     } catch (e: any) {
-      setError(e.message || "An error occurred");
+      setError(e.message || "An error occurred.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this user?")) {
-      try {
-        const res = await deleteUser(id);
-        if (res.success) {
-          loadUsers();
-        } else {
-          alert(res.message || "Failed to delete user");
-        }
-      } catch (e) {
-        console.error(e);
-      }
+  const handleDeactivate = async (id: string, name: string) => {
+    if (!confirm(`Deactivate "${name}"? They will no longer be able to sign in.`)) return;
+    try {
+      await deactivateUser(id);
+      loadUsers();
+    } catch (e: any) {
+      alert(e.message);
     }
   };
 
   const filteredUsers = users.filter(u => {
-    const fullName = `${u.firstName} ${u.lastName}`.toLowerCase();
-    const email = (u.email || "").toLowerCase();
     const q = search.toLowerCase();
-    const matchesSearch = fullName.includes(q) || email.includes(q);
+    const matchesSearch = (u.name ?? "").toLowerCase().includes(q) || (u.email ?? "").toLowerCase().includes(q);
     const matchesRole = filterRole === "ALL" || u.role === filterRole;
     return matchesSearch && matchesRole;
   });
 
+  const isAdmin = user?.role === "ADMIN";
+
   return (
-    <div className="flex h-screen flex-col bg-[#fafafa] relative">
-        <Topbar 
-          title="Team Directory" 
-          subtitle="Manage users, assign roles, and invite new team members." 
-          onMenu={() => {}} 
-        />
-        
-        <main className="flex-1 overflow-y-auto px-[20px] py-[32px] md:px-[32px] max-w-[1200px] mx-auto w-full relative z-0">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: EASE }}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-[16px] mb-[24px]">
-              <div>
-                <h2 className="text-[18px] font-semibold text-black">All Users</h2>
-                <p className="text-[13px] text-[#71717a] mt-[4px]">Manage roles and permissions across your organization.</p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-center gap-[12px] w-full sm:w-auto">
-                <div className="flex gap-[12px] w-full sm:w-auto">
-                  <div className="relative w-full sm:w-[220px]">
-                    <MagnifyingGlass size={16} className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[#a1a1aa]" />
-                    <input
-                      type="text"
-                      placeholder="Search by name or email..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="h-[36px] w-full rounded-[8px] border border-black/[0.08] bg-white pl-[36px] pr-[12px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
-                    />
-                  </div>
-                  <div className="relative w-full sm:w-[160px]">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-[10px] text-slate-400">
-                      <Funnel size={14} weight="bold" />
-                    </div>
-                    <select
-                      value={filterRole}
-                      onChange={(e) => setFilterRole(e.target.value)}
-                      className="h-[36px] w-full appearance-none rounded-[8px] border border-black/[0.08] bg-white pl-[32px] pr-[28px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
-                    >
-                      <option value="ALL">All Roles</option>
-                      <option value="UNIVERSITY_ADMIN">Admin</option>
-                      <option value="SUSTAINABILITY_MANAGER">Sustainability Manager</option>
-                      <option value="FACILITIES_MANAGER">Facilities Manager</option>
-                      <option value="REVIEWER">Reviewer</option>
-                      <option value="DATA_ENTRY">Data Entry</option>
-                      <option value="AUDITOR">Auditor</option>
-                      <option value="MANAGEMENT">Management</option>
-                      <option value="USER">Standard User</option>
-                    </select>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="flex shrink-0 items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[16px] py-[8px] h-[36px] text-[13px] font-semibold text-white transition-colors hover:bg-[#15803d]"
-                >
-                  <Plus size={14} weight="bold" />
-                  Invite user
-                </button>
-              </div>
-            </div>
+    <div className="flex flex-col h-full bg-[#f8fafc]">
+      <Topbar title="Team" subtitle="Manage university staff access and roles" />
 
-            <div className="rounded-[12px] border border-black/[0.08] bg-white overflow-hidden shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-              <div className="overflow-x-auto">
-                <table className="w-full min-w-[700px] border-collapse">
-                  <thead>
-                    <tr className="border-b border-black/[0.06] bg-[#fafafa] text-left text-[11px] font-semibold uppercase tracking-[0.06em] text-[#71717a]">
-                      <th className="px-[20px] py-[12px]">Name</th>
-                      <th className="px-[20px] py-[12px]">Role</th>
-                      <th className="px-[20px] py-[12px]">Status</th>
-                      <th className="px-[20px] py-[12px] w-[60px]"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan={4} className="p-[32px] text-center text-[#a1a1aa] text-[13px]">Loading users...</td>
-                      </tr>
-                    ) : filteredUsers.length === 0 ? (
-                      <tr>
-                        <td colSpan={4} className="p-[32px] text-center text-[#a1a1aa] text-[13px]">No users found.</td>
-                      </tr>
-                    ) : (
-                      filteredUsers.map((u, i) => (
-                        <tr key={u.id} className="border-b border-black/[0.04] last:border-none hover:bg-black/[0.01] transition-colors">
-                          <td className="px-[20px] py-[16px]">
-                            <div className="flex items-center gap-[12px]">
-                              <span className="flex h-[32px] w-[32px] items-center justify-center rounded-full bg-[#f4f4f5] text-[12px] font-semibold uppercase text-[#52525b]">
-                                {u.firstName.charAt(0)}{u.lastName ? u.lastName.charAt(0) : ""}
-                              </span>
-                              <div>
-                                <p className="text-[13.5px] font-medium text-black">{u.firstName} {u.lastName}</p>
-                                <p className="text-[12px] text-[#71717a]">{u.email}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-[20px] py-[16px]">
-                            <span className="rounded-[6px] border border-black/[0.08] bg-[#fafafa] px-[8px] py-[3px] text-[11px] font-semibold text-[#52525b]">
-                              {u.role.replace(/_/g, " ")}
-                            </span>
-                          </td>
-                          <td className="px-[20px] py-[16px]">
-                            {u.status === "ACTIVE" ? (
-                              <span className="flex w-fit items-center gap-[4px] rounded-full bg-[#f0fdf4] px-[8px] py-[2px] text-[11px] font-medium text-[#16a34a]">
-                                <CheckCircle size={12} weight="fill" /> Active
-                              </span>
-                            ) : (
-                              <span className="flex w-fit items-center gap-[4px] rounded-full bg-[#fffbeb] px-[8px] py-[2px] text-[11px] font-medium text-[#d97706]">
-                                <EnvelopeSimple size={12} weight="fill" /> Pending
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-[20px] py-[16px] text-right">
-                            {u.id !== user?.id && (
-                              <button 
-                                onClick={() => handleDelete(u.id)}
-                                className="text-[#a1a1aa] hover:text-red-600 transition-colors"
-                              >
-                                <Trash size={16} weight="bold" />
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </motion.div>
-        </main>
+      <main className="flex-1 overflow-y-auto p-6">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: EASE }}>
 
-        <AnimatePresence>
-          {isModalOpen && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
-                onClick={() => setIsModalOpen(false)}
-              />
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                transition={{ duration: 0.2, ease: EASE }}
-                className="relative w-full max-w-[440px] rounded-[16px] bg-white shadow-2xl p-[24px]"
-              >
-                <div className="flex items-center justify-between mb-[20px]">
-                  <h3 className="text-[18px] font-semibold text-black">Invite Team Member</h3>
-                  <button onClick={() => setIsModalOpen(false)} className="text-[#a1a1aa] hover:text-black">
-                    <X size={20} />
-                  </button>
-                </div>
-                
-                {error && <div className="mb-[16px] rounded-[8px] bg-red-50 p-[12px] text-[13px] text-red-600 border border-red-100">{error}</div>}
-
-                <form onSubmit={handleInvite} className="flex flex-col gap-[16px]">
-                  <div className="grid grid-cols-2 gap-[12px]">
-                    <div>
-                      <label className="block text-[12px] font-medium text-[#71717a] mb-[6px]">First Name</label>
-                      <input 
-                        required
-                        type="text" 
-                        value={formData.firstName}
-                        onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                        className="w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] py-[8px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[12px] font-medium text-[#71717a] mb-[6px]">Last Name</label>
-                      <input 
-                        type="text" 
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                        className="w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] py-[8px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-medium text-[#71717a] mb-[6px]">Email Address</label>
-                    <input 
-                      required
-                      type="email" 
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] py-[8px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-medium text-[#71717a] mb-[6px]">Role</label>
-                    <select 
-                      value={formData.role}
-                      onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      className="w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] py-[8px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
-                    >
-                      <option value="UNIVERSITY_ADMIN">University Admin</option>
-                      <option value="SUSTAINABILITY_MANAGER">Sustainability Manager</option>
-                      <option value="FACILITIES_MANAGER">Facilities Manager</option>
-                      <option value="REVIEWER">Reviewer</option>
-                      <option value="DATA_ENTRY">Data Entry</option>
-                      <option value="AUDITOR">Auditor</option>
-                      <option value="MANAGEMENT">Management</option>
-                      <option value="USER">Standard User</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[12px] font-medium text-[#71717a] mb-[6px]">University ID (UUID)</label>
-                    <input 
-                      required
-                      type="text" 
-                      value={formData.universityId}
-                      onChange={(e) => setFormData({...formData, universityId: e.target.value})}
-                      className="w-full rounded-[8px] border border-black/[0.08] bg-white px-[12px] py-[8px] text-[13px] text-black outline-none focus:border-[#16a34a] focus:ring-1 focus:ring-[#16a34a]"
-                      placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-                    />
-                  </div>
-
-                  <div className="mt-[8px] flex gap-[10px] justify-end">
-                    <button 
-                      type="button"
-                      onClick={() => setIsModalOpen(false)}
-                      className="rounded-[8px] px-[16px] py-[8px] text-[13px] font-semibold text-[#71717a] hover:bg-black/[0.03] transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button 
-                      type="submit"
-                      disabled={submitting}
-                      className="flex items-center gap-[6px] rounded-[8px] bg-[#16a34a] px-[16px] py-[8px] text-[13px] font-semibold text-white transition-colors hover:bg-[#15803d] disabled:opacity-50"
-                    >
-                      {submitting ? "Inviting..." : "Send Invitation"}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
+          {successMsg && (
+            <div className="mb-4 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 px-4 py-3">
+              <CheckCircle size={18} className="text-green-600 shrink-0" />
+              <p className="text-sm font-semibold text-green-800">{successMsg}</p>
             </div>
           )}
-        </AnimatePresence>
+
+          {/* Header actions */}
+          <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="relative flex-1 max-w-xs">
+              <MagnifyingGlass size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or email..." className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            </div>
+            <select value={filterRole} onChange={e => setFilterRole(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="ALL">All Roles</option>
+              {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </select>
+            {isAdmin && (
+              <button onClick={() => { setError(""); setIsModalOpen(true); }} className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-colors ml-auto">
+                <Plus size={16} /> Add User
+              </button>
+            )}
+          </div>
+
+          {/* Users table */}
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+            {loading ? (
+              <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-500 border-t-transparent" /></div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="py-20 text-center">
+                <UserCircle size={40} className="mx-auto mb-3 text-slate-300" />
+                <p className="text-sm font-semibold text-slate-600">{search ? "No users match your search" : "No team members yet"}</p>
+                {!search && isAdmin && <p className="text-xs text-slate-400 mt-1">Click "Add User" to create the first team member</p>}
+              </div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead className="border-b border-slate-100 bg-slate-50">
+                  <tr>
+                    {["Name & Email", "Role", "Status", "Joined", isAdmin ? "Action" : ""].map(h => (
+                      <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredUsers.map((u: any) => (
+                    <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-xs shrink-0">
+                            {(u.name ?? u.email ?? "?")[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-800">{u.name ?? "-"}</p>
+                            <p className="text-xs text-slate-400 flex items-center gap-1"><EnvelopeSimple size={10} />{u.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${ROLE_COLORS[u.role] ?? "bg-slate-50 text-slate-600 border-slate-200"}`}>
+                          <Shield size={10} />{u.role?.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4">
+                        {u.active !== false ? (
+                          <span className="flex w-fit items-center gap-1 rounded-full bg-green-50 border border-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                            <CheckCircle size={10} weight="fill" /> Active
+                          </span>
+                        ) : (
+                          <span className="flex w-fit items-center gap-1 rounded-full bg-slate-50 border border-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-500">
+                            Inactive
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 text-slate-400 text-xs">
+                        {u.created_at ? new Date(u.created_at).toLocaleDateString() : "-"}
+                      </td>
+                      {isAdmin && (
+                        <td className="px-5 py-4">
+                          {u.id !== user?.id && u.active !== false && (
+                            <button onClick={() => handleDeactivate(u.id, u.name)} className="text-slate-400 hover:text-red-600 transition-colors" title="Deactivate user">
+                              <Trash size={15} weight="bold" />
+                            </button>
+                          )}
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          <p className="mt-4 text-xs text-slate-400 text-center">{filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""} shown</p>
+        </motion.div>
+      </main>
+
+      {/* Add User Modal */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={() => setIsModalOpen(false)} />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 10 }} transition={{ duration: 0.2, ease: EASE }} className="relative w-full max-w-[440px] rounded-2xl bg-white shadow-2xl p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-lg font-bold text-slate-900">Add Team Member</h3>
+                <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-800"><X size={20} /></button>
+              </div>
+
+              {error && <div className="mb-4 rounded-xl bg-red-50 border border-red-100 p-3 text-sm text-red-600">{error}</div>}
+
+              <form onSubmit={handleCreate} className="flex flex-col gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Full Name *</label>
+                  <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Jane Smith" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Email Address *</label>
+                  <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="jane@university.edu" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Temporary Password *</label>
+                  <div className="relative">
+                    <input required type={showPassword ? "text" : "password"} value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} placeholder="Min. 8 characters" className="w-full rounded-xl border border-slate-200 bg-white px-3 pr-10 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+                    <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                      {showPassword ? <EyeSlash size={14} /> : <Eye size={14} />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">User should change this after first login.</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1.5">Role *</label>
+                  <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                  </select>
+                  <div className="mt-2 text-xs text-slate-400 space-y-0.5">
+                    <p><span className="font-semibold">Admin</span> — full system access</p>
+                    <p><span className="font-semibold">Reviewer</span> — can approve/reject submissions</p>
+                    <p><span className="font-semibold">Data Entry</span> — can submit data</p>
+                    <p><span className="font-semibold">Leadership</span> — read-only reports</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 justify-end mt-2">
+                  <button type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">Cancel</button>
+                  <button type="submit" disabled={submitting || !formData.name || !formData.email || !formData.password} className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50 transition-colors">
+                    <Plus size={14} />{submitting ? "Creating..." : "Create User"}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

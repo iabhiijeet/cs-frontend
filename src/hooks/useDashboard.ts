@@ -8,8 +8,8 @@ const EMPTY_DATA = {
   SCOPE2_12M: 0,
   SCOPE3_12M: 0,
   SCOPES: [
-    { key: "scope1", name: "Scope 1 — Direct", value: 0, share: 0, color: "#15803d" },
-    { key: "scope2", name: "Scope 2 — Energy", value: 0, share: 0, color: "#22c55e" },
+    { key: "scope1", name: "Scope 1 — Direct", value: 0, share: 0, color: "#0f766e" },
+    { key: "scope2", name: "Scope 2 — Energy", value: 0, share: 0, color: "#06b6d4" },
   ],
   CATEGORIES: [],
   KPIS: [
@@ -19,8 +19,8 @@ const EMPTY_DATA = {
     { label: "Reduction vs baseline", value: 0, decimals: 1, suffix: "%", delta: 0, deltaLabel: "of baseline", good: true, spark: [] },
   ],
   SCOPE_DETAILS: [
-    { key: "scope1", num: "1", name: "Direct emissions", headline: "Sources you own or control", description: "Emissions from owned or controlled sources.", color: "#15803d", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
-    { key: "scope2", num: "2", name: "Energy purchases", headline: "Indirect emissions from energy", description: "Emissions from purchased electricity, heating and cooling.", color: "#22c55e", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
+    { key: "scope1", num: "1", name: "Direct emissions", headline: "Sources you own or control", description: "Emissions from owned or controlled sources.", color: "#0f766e", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
+    { key: "scope2", num: "2", name: "Energy purchases", headline: "Indirect emissions from energy", description: "Emissions from purchased electricity, heating and cooling.", color: "#06b6d4", share: 0, total: 0, delta: 0, intensity: 0, monthly: [], sources: [] },
   ],
   FOOTPRINT_GROUPS: [],
   ACTIVITY: [],
@@ -52,11 +52,7 @@ export function useDashboard() {
   });
 
   useEffect(() => {
-    // Wait for the foundation (auth + reporting period) before any request.
-    if (periodStatus === "idle" || periodStatus === "resolving") {
-      setLoading(true);
-      return;
-    }
+    const effectivePeriodId = filters.reportingPeriodId || activePeriodId || "";
 
     if (periodStatus === "empty") {
       setData(EMPTY_DATA);
@@ -74,7 +70,12 @@ export function useDashboard() {
       return;
     }
 
-    const effectivePeriodId = filters.reportingPeriodId || activePeriodId || "";
+    // If still resolving reporting period and we don't have a cached period ID yet, wait.
+    if ((periodStatus === "idle" || periodStatus === "resolving") && !effectivePeriodId) {
+      setLoading(true);
+      return;
+    }
+
     if (!effectivePeriodId) {
       setData(EMPTY_DATA);
       setError(null);
@@ -140,8 +141,8 @@ function mapBackendToFrontend(backendData: any) {
   const SCOPE3_12M = parseFloat((b.overview?.scope3Tonnes || 0).toFixed(2));
 
   const SCOPES = [
-    { key: "scope1", name: "Scope 1 — Direct", value: SCOPE1_12M, share: TOTAL_12M ? SCOPE1_12M / TOTAL_12M : 0, color: "#15803d" },
-    { key: "scope2", name: "Scope 2 — Energy", value: SCOPE2_12M, share: TOTAL_12M ? SCOPE2_12M / TOTAL_12M : 0, color: "#22c55e" },
+    { key: "scope1", name: "Scope 1 — Direct", value: SCOPE1_12M, share: TOTAL_12M ? SCOPE1_12M / TOTAL_12M : 0, color: "#0f766e" },
+    { key: "scope2", name: "Scope 2 — Energy", value: SCOPE2_12M, share: TOTAL_12M ? SCOPE2_12M / TOTAL_12M : 0, color: "#06b6d4" },
   ];
 
   const CATEGORIES = (b.categories || []).map((c: any) => ({

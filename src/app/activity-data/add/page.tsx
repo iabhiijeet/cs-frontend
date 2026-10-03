@@ -20,6 +20,12 @@ import {
   Plus,
   Buildings,
   Leaf,
+  CalendarBlank,
+  FileText,
+  Sparkle,
+  MapPin,
+  Gauge,
+  Info,
 } from "@phosphor-icons/react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import Topbar from "@/components/dashboard/Topbar";
@@ -27,7 +33,6 @@ import {
   createActivityData,
   fetchAPI,
   getReportingPeriods,
-  calculateEmissionsBulk,
   getAssets,
   createAsset,
 } from "@/lib/api";
@@ -35,69 +40,220 @@ import { toast } from "sonner";
 
 /* ─── Category Definitions ──────────────────────────────────────────── */
 const CATEGORIES = [
-  { key: "PURCHASED_ELECTRICITY", label: "Electricity", sub: "Grid power consumption", group: "Energy", scope: "SCOPE_2" as const, unit: "kWh", Icon: Lightning, color: "#f59e0b", bg: "#fffbeb", border: "#fde68a" },
-  { key: "PURCHASED_STEAM",       label: "Steam",       sub: "Purchased steam/heat",   group: "Energy", scope: "SCOPE_2" as const, unit: "kg",  Icon: Wind,      color: "#06b6d4", bg: "#ecfeff", border: "#a5f3fc" },
-  { key: "DIESEL",                label: "Diesel",      sub: "Diesel fuel usage",       group: "Fuel",   scope: "SCOPE_1" as const, unit: "L",   Icon: Drop,      color: "#ef4444", bg: "#fef2f2", border: "#fecaca" },
-  { key: "PETROL",                label: "Petrol",      sub: "Petrol / Gasoline",       group: "Fuel",   scope: "SCOPE_1" as const, unit: "L",   Icon: Flame,     color: "#f97316", bg: "#fff7ed", border: "#fed7aa" },
-  { key: "LPG",                   label: "LPG",         sub: "Liquefied petroleum gas", group: "Fuel",   scope: "SCOPE_1" as const, unit: "kg",  Icon: Flame,     color: "#8b5cf6", bg: "#f5f3ff", border: "#ddd6fe" },
-  { key: "NATURAL_GAS",           label: "Natural Gas", sub: "PNG / piped gas",         group: "Fuel",   scope: "SCOPE_1" as const, unit: "m³",  Icon: Wind,      color: "#3b82f6", bg: "#eff6ff", border: "#bfdbfe" },
-  { key: "REFRIGERANT",           label: "Refrigerant", sub: "AC / chiller leakage",   group: "Refrigerants", scope: "SCOPE_1" as const, unit: "kg", Icon: Snowflake, color: "#0ea5e9", bg: "#f0f9ff", border: "#bae6fd" },
-  { key: "OWNED_VEHICLE",         label: "Vehicles",    sub: "University-owned fleet",  group: "Transport", scope: "SCOPE_1" as const, unit: "km", Icon: Car,      color: "#10b981", bg: "#f0fdf4", border: "#bbf7d0" },
+  {
+    key: "PURCHASED_ELECTRICITY",
+    label: "Electricity",
+    sub: "Grid power consumption",
+    group: "Energy",
+    scope: "SCOPE_2" as const,
+    unit: "kWh",
+    Icon: Lightning,
+    accent: "teal",
+    color: "#0d9488",
+    bg: "#f0fdfa",
+    border: "#99f6e4",
+  },
+  {
+    key: "PURCHASED_STEAM",
+    label: "Steam / Heat",
+    sub: "Purchased district steam",
+    group: "Energy",
+    scope: "SCOPE_2" as const,
+    unit: "kg",
+    Icon: Wind,
+    accent: "cyan",
+    color: "#0891b2",
+    bg: "#ecfeff",
+    border: "#a5f3fc",
+  },
+  {
+    key: "DIESEL",
+    label: "Diesel Fuel",
+    sub: "Generators & heavy machinery",
+    group: "Fuel",
+    scope: "SCOPE_1" as const,
+    unit: "L",
+    Icon: Drop,
+    accent: "amber",
+    color: "#d97706",
+    bg: "#fffbeb",
+    border: "#fde68a",
+  },
+  {
+    key: "PETROL",
+    label: "Petrol / Gasoline",
+    sub: "Vehicles & light equipment",
+    group: "Fuel",
+    scope: "SCOPE_1" as const,
+    unit: "L",
+    Icon: Flame,
+    accent: "orange",
+    color: "#ea580c",
+    bg: "#fff7ed",
+    border: "#fed7aa",
+  },
+  {
+    key: "LPG",
+    label: "LPG",
+    sub: "Canteens & heating cylinders",
+    group: "Fuel",
+    scope: "SCOPE_1" as const,
+    unit: "kg",
+    Icon: Flame,
+    accent: "purple",
+    color: "#7c3aed",
+    bg: "#f5f3ff",
+    border: "#ddd6fe",
+  },
+  {
+    key: "NATURAL_GAS",
+    label: "Natural Gas (PNG)",
+    sub: "Piped gas distribution",
+    group: "Fuel",
+    scope: "SCOPE_1" as const,
+    unit: "m³",
+    Icon: Wind,
+    accent: "sky",
+    color: "#0284c7",
+    bg: "#f0f9ff",
+    border: "#bae6fd",
+  },
+  {
+    key: "REFRIGERANT",
+    label: "Refrigerant",
+    sub: "HVAC & chiller fugitive losses",
+    group: "Fugitive",
+    scope: "SCOPE_1" as const,
+    unit: "kg",
+    Icon: Snowflake,
+    accent: "blue",
+    color: "#2563eb",
+    bg: "#eff6ff",
+    border: "#bfdbfe",
+  },
+  {
+    key: "OWNED_VEHICLE",
+    label: "Fleet Transport",
+    sub: "Institution owned vehicles",
+    group: "Transport",
+    scope: "SCOPE_1" as const,
+    unit: "km",
+    Icon: Car,
+    accent: "emerald",
+    color: "#059669",
+    bg: "#ecfdf5",
+    border: "#a7f3d0",
+  },
 ];
 
-/* ─── Custom Select ─────────────────────────────────────────────────── */
+/* ─── Custom Select Component ───────────────────────────────────────── */
 function CustomSelect({
-  label, required, placeholder, value, onChange, options, disabled,
+  label,
+  required,
+  placeholder,
+  value,
+  onChange,
+  options,
+  disabled,
+  helper,
 }: {
-  label: string; required?: boolean; placeholder: string;
-  value: string; onChange: (v: string) => void;
-  options: { value: string; label: string }[]; disabled?: boolean;
+  label: string;
+  required?: boolean;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  disabled?: boolean;
+  helper?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const selected = options.find(o => o.value === value);
+  const selected = options.find((o) => o.value === value);
 
   return (
     <div className="relative">
-      <label className="mb-1.5 block text-xs font-semibold text-[#52525b]">
-        {label}{required && <span className="ml-0.5 text-red-500">*</span>}
-      </label>
+      {label && (
+        <label className="mb-1.5 flex items-center justify-between text-xs font-bold text-slate-700">
+          <span>
+            {label}
+            {required && <span className="ml-0.5 text-teal-600">*</span>}
+          </span>
+        </label>
+      )}
       <button
         type="button"
         disabled={disabled}
-        onClick={() => !disabled && setOpen(p => !p)}
-        className={`flex w-full items-center justify-between rounded-[10px] border px-3.5 py-2.5 text-sm transition-all
-          ${disabled ? "bg-[#f4f4f5] border-[#e4e4e7] text-[#a1a1aa] cursor-not-allowed" :
-            open ? "border-indigo-500 ring-2 ring-indigo-500/10 bg-white text-[#18181b]" :
-            "border-[#e4e4e7] bg-white text-[#18181b] hover:border-[#a1a1aa]"}`}
+        onClick={() => !disabled && setOpen((p) => !p)}
+        className={`flex h-11 w-full items-center justify-between rounded-xl border px-3.5 text-sm font-medium transition-all ${
+          disabled
+            ? "bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed"
+            : open
+            ? "border-teal-500 ring-3 ring-teal-500/15 bg-white text-slate-900 shadow-xs"
+            : "border-slate-200/90 bg-white text-slate-800 hover:border-teal-300 hover:bg-slate-50/50 shadow-2xs"
+        }`}
       >
-        <span className={selected ? "text-[#18181b]" : "text-[#a1a1aa]"}>
+        <span className={selected ? "text-slate-900 font-semibold" : "text-slate-400"}>
           {selected ? selected.label : placeholder}
         </span>
-        <CaretDown size={14} weight="bold" className={`shrink-0 text-[#a1a1aa] transition-transform ${open ? "rotate-180" : ""}`} />
+        <CaretDown
+          size={14}
+          weight="bold"
+          className={`shrink-0 text-slate-400 transition-transform duration-200 ${
+            open ? "rotate-180 text-teal-600" : ""
+          }`}
+        />
       </button>
+
+      {helper && <p className="mt-1 text-[11px] text-slate-500">{helper}</p>}
 
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.15 }}
-            className="absolute left-0 right-0 top-full z-50 mt-1.5 overflow-hidden rounded-[10px] border border-[#e4e4e7] bg-white shadow-xl"
-          >
-            {options.map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => { onChange(opt.value); setOpen(false); }}
-                className={`flex w-full items-center justify-between px-3.5 py-2.5 text-sm transition-colors
-                  ${opt.value === value ? "bg-indigo-50 text-indigo-700 font-semibold" : "text-[#18181b] hover:bg-[#f4f4f5]"}`}
-              >
-                {opt.label}
-                {opt.value === value && <CheckCircle size={15} weight="fill" className="text-indigo-500" />}
-              </button>
-            ))}
-          </motion.div>
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.98 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className="absolute left-0 right-0 top-full z-50 mt-1.5 max-h-60 overflow-y-auto rounded-xl border border-teal-100 bg-white p-1 shadow-xl shadow-teal-950/10 backdrop-blur-md"
+            >
+              {options.length === 0 ? (
+                <div className="px-3.5 py-3 text-center text-xs text-slate-400">
+                  No options available
+                </div>
+              ) : (
+                options.map((opt) => {
+                  const isSelected = opt.value === value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        onChange(opt.value);
+                        setOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-semibold transition-colors ${
+                        isSelected
+                          ? "bg-teal-50 text-teal-900 font-bold"
+                          : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      {isSelected && (
+                        <CheckCircle
+                          size={15}
+                          weight="fill"
+                          className="text-teal-600 shrink-0"
+                        />
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
@@ -138,311 +294,691 @@ export default function AddActivityPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [h, p, a] = await Promise.all([fetchAPI("/onboarding/hierarchy"), getReportingPeriods(), getAssets()]);
+        const [h, p, a] = await Promise.all([
+          fetchAPI("/onboarding/hierarchy"),
+          getReportingPeriods(),
+          getAssets(),
+        ]);
         if (h.success) {
           setHierarchy(h.data);
           const cs = h.data?.campuses || [];
           if (cs.length === 1) {
             setCampusId(cs[0].id);
             const bs = cs[0].buildings || [];
-            if (bs.length === 1) { setBuildingId(bs[0].id); const fs = bs[0].floors || []; if (fs.length === 1) setFloorId(fs[0].id); }
+            if (bs.length === 1) {
+              setBuildingId(bs[0].id);
+              const fs = bs[0].floors || [];
+              if (fs.length === 1) setFloorId(fs[0].id);
+            }
           }
         }
-        if (p.success) { setPeriods(p.data); if (p.data.length === 1) setPeriodId(p.data[0].id); }
+        if (p.success) {
+          setPeriods(p.data);
+          if (p.data.length === 1) setPeriodId(p.data[0].id);
+        }
         if (a.success) setAllAssets(a.data);
       } catch {}
     })();
   }, []);
 
-  const campuses  = hierarchy?.campuses || [];
-  const buildings = campuses.find((c: any) => c.id === campusId)?.buildings || [];
-  const floors    = buildings.find((b: any) => b.id === buildingId)?.floors  || [];
-  const assets    = allAssets.filter(a => floorId ? a.locationId === floorId : buildingId ? a.locationId === buildingId : campusId ? a.locationId === campusId : true);
+  const campuses = hierarchy?.campuses || [];
+  const buildings =
+    campuses.find((c: any) => c.id === campusId)?.buildings || [];
+  const floors =
+    buildings.find((b: any) => b.id === buildingId)?.floors || [];
+  const assets = allAssets.filter((a) =>
+    floorId
+      ? a.locationId === floorId
+      : buildingId
+      ? a.locationId === buildingId
+      : campusId
+      ? a.locationId === campusId
+      : true
+  );
 
-  const selectedCat = CATEGORIES.find(c => c.key === category);
+  const selectedCat = CATEGORIES.find((c) => c.key === category);
 
   const handleCategorySelect = (key: string) => {
     setCategory(key);
-    setUnit(CATEGORIES.find(c => c.key === key)?.unit || "");
+    const cat = CATEGORIES.find((c) => c.key === key);
+    if (cat) {
+      setUnit(cat.unit);
+    }
   };
 
   const handleCreateAsset = async () => {
     if (!newAssetName || !campusId) return;
     try {
-      const r = await createAsset({ name: newAssetName, assetType: "Equipment", locationId: floorId || buildingId || campusId }) as any;
-      if (r.success && r.data) { setAllAssets(p => [...p, r.data]); setAssetId(r.data.id); setAddingAsset(false); setNewAssetName(""); toast.success("Asset added"); }
-    } catch (e: any) { toast.error(e.message || "Failed to create asset"); }
+      const r = (await createAsset({
+        name: newAssetName,
+        assetType: "Equipment",
+        locationId: floorId || buildingId || campusId,
+      })) as any;
+      if (r.success && r.data) {
+        setAllAssets((p) => [...p, r.data]);
+        setAssetId(r.data.id);
+        setAddingAsset(false);
+        setNewAssetName("");
+        toast.success("Asset added successfully");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to create asset");
+    }
   };
 
   const handleSave = async (status: "DRAFT" | "SUBMITTED") => {
-    if (!campusId || !category || !quantity || !unit || !activityDate || !periodId) { toast.error("Please fill all required fields"); return; }
+    if (!campusId) {
+      toast.error("Please select a Campus / Location");
+      return;
+    }
+    if (!category) {
+      toast.error("Please select an Activity Category");
+      return;
+    }
+    if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
+      toast.error("Please enter a valid positive quantity");
+      return;
+    }
+    if (!unit) {
+      toast.error("Please specify a unit");
+      return;
+    }
+    if (!activityDate) {
+      toast.error("Please select an Activity Date");
+      return;
+    }
+    if (!periodId) {
+      toast.error("Please select a Reporting Period");
+      return;
+    }
+
     setSaving(true);
     try {
-      const r = await createActivityData({ reportingPeriodId: periodId, physicalEntityId: assetId || floorId || buildingId || campusId, category, scope: selectedCat!.scope, quantity: Number(quantity), unit, activityDate: new Date(activityDate).toISOString(), description: notes, status, inputSource: dataSource.includes("Manual") ? "MANUAL" : "INVOICE" }) as any;
-      if (r.success && r.data?.id) { try { await calculateEmissionsBulk({ activity_data_id: r.data.id }); } catch {} }
-      toast.success(status === "SUBMITTED" ? "Submitted for Review" : "Saved as Draft");
+      await createActivityData({
+        reportingPeriodId: periodId,
+        physicalEntityId: assetId || floorId || buildingId || campusId,
+        category,
+        scope: selectedCat?.scope || "SCOPE_1",
+        quantity: Number(quantity),
+        unit,
+        activityDate: new Date(activityDate).toISOString(),
+        description: notes,
+        status,
+        inputSource: dataSource.includes("Manual") ? "MANUAL" : "INVOICE",
+      });
+      toast.success(
+        status === "SUBMITTED"
+          ? "Submitted for Verification ✅"
+          : "Saved as Draft 📝"
+      );
       router.push("/activity-data");
-    } catch (e: any) { toast.error(e.message || "Failed to save"); }
-    finally { setSaving(false); }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to save activity");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // Completion check for each step
+  // Completion check
   const step1Done = !!campusId;
   const step2Done = !!category;
   const step3Done = !!quantity && !!unit;
   const step4Done = !!activityDate && !!periodId;
+  const completedCount = [step1Done, step2Done, step3Done, step4Done].filter(
+    Boolean
+  ).length;
 
   return (
-    <div className="flex h-screen flex-row bg-[#f8f8fa]">
-      {!fromSetup && <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} active="activity-data" onChange={() => {}} />}
+    <div className="flex h-screen flex-row bg-[#f8fafc]">
+      <Sidebar
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        active="activity-data"
+        onChange={() => {}}
+      />
 
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <Topbar onMenu={fromSetup ? undefined : () => setMenuOpen(true)} title="Add Activity Data" subtitle="Record operational emissions data" />
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-gradient-to-b from-[#f0fbf9]/60 via-[#f8fafc] to-[#edf9f7]/40">
+        <Topbar
+          onMenu={() => setMenuOpen(true)}
+          title="Add Activity Data"
+          subtitle="Record operational greenhouse gas emissions and activity metrics"
+        />
 
-        <main className="flex-1 overflow-y-auto px-5 py-6 md:px-8">
-          <div className="mx-auto max-w-[820px]">
+        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-8">
+          <div className="mx-auto max-w-[860px]">
+            {/* ── Breadcrumb & Return ── */}
+            <div className="mb-5 flex items-center justify-between">
+              <button
+                onClick={() => router.push("/activity-data")}
+                className="group inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-teal-700 transition-colors bg-white border border-teal-100/90 rounded-xl px-3.5 py-2 shadow-2xs hover:border-teal-300"
+              >
+                <ArrowLeft
+                  size={14}
+                  weight="bold"
+                  className="transition-transform group-hover:-translate-x-0.5 text-teal-600"
+                />
+                <span>Back to Activity Log</span>
+              </button>
 
-            {/* Back */}
-            <button onClick={() => router.push("/activity-data")} className="mb-5 flex items-center gap-2 text-[13px] font-semibold text-[#71717a] hover:text-[#18181b] transition-colors">
-              <ArrowLeft size={15} weight="bold" /> Back to Activity Data
-            </button>
-
-            {/* Progress pills */}
-            <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-1">
-              {[
-                { n: "1", label: "Location", done: step1Done },
-                { n: "2", label: "Activity Type", done: step2Done },
-                { n: "3", label: "Quantity", done: step3Done },
-                { n: "4", label: "Date & Period", done: step4Done },
-              ].map((s, i, arr) => (
-                <div key={s.n} className="flex items-center gap-2 shrink-0">
-                  <div className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-colors ${s.done ? "bg-[#16a34a] text-white" : "bg-white border border-[#e4e4e7] text-[#71717a]"}`}>
-                    {s.done ? <CheckCircle size={13} weight="fill" /> : <span className="h-3.5 w-3.5 rounded-full border border-current flex items-center justify-center text-[10px]">{s.n}</span>}
-                    {s.label}
-                  </div>
-                  {i < arr.length - 1 && <div className="h-px w-4 bg-[#e4e4e7] shrink-0" />}
-                </div>
-              ))}
+              <div className="inline-flex items-center gap-2 rounded-full border border-teal-200/80 bg-teal-50/90 px-3 py-1 text-xs font-bold text-teal-800 shadow-2xs">
+                <Sparkle size={13} weight="fill" className="text-teal-600" />
+                <span>Standard GHG Protocol Intake</span>
+              </div>
             </div>
 
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE }} className="space-y-4">
+            {/* ── Progress Milestone Header ── */}
+            <div className="mb-6 rounded-2xl border border-teal-100/90 bg-white/95 p-4 sm:p-5 shadow-[0_4px_20px_rgba(13,148,136,0.04)] backdrop-blur-md">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3.5">
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                    <span>Intake Progress</span>
+                    <span className="text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-md">
+                      {completedCount} of 4 Completed
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Complete all 4 required sections before final submission.
+                  </p>
+                </div>
+                {/* Progress bar */}
+                <div className="w-full sm:w-44 h-2.5 rounded-full bg-slate-100 overflow-hidden p-0.5 border border-slate-200/60">
+                  <motion.div
+                    className="h-full rounded-full bg-gradient-to-r from-teal-500 via-cyan-500 to-sky-500"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(completedCount / 4) * 100}%` }}
+                    transition={{ duration: 0.4, ease: EASE }}
+                  />
+                </div>
+              </div>
 
-              {/* ── CARD 1: Location ─────────────────────────────────── */}
-              <div className="rounded-[16px] border border-[#e4e4e7] bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#eef2ff] text-[#4f46e5]">
-                    <Buildings size={16} weight="fill" />
+              {/* Milestone chips */}
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  { n: "01", label: "Facility", done: step1Done },
+                  { n: "02", label: "Category", done: step2Done },
+                  { n: "03", label: "Consumption", done: step3Done },
+                  { n: "04", label: "Accounting Period", done: step4Done },
+                ].map((s) => (
+                  <div
+                    key={s.n}
+                    className={`flex items-center gap-2 rounded-xl p-2.5 border transition-all ${
+                      s.done
+                        ? "border-teal-200 bg-teal-50/70 text-teal-900 font-bold shadow-2xs"
+                        : "border-slate-200/80 bg-slate-50/60 text-slate-500 font-medium"
+                    }`}
+                  >
+                    <span
+                      className={`flex size-5 items-center justify-center rounded-lg text-[10px] font-black ${
+                        s.done
+                          ? "bg-teal-600 text-white"
+                          : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {s.done ? "✓" : s.n}
+                    </span>
+                    <span className="text-xs truncate">{s.label}</span>
                   </div>
-                  <div>
-                    <h2 className="text-[14px] font-bold text-[#18181b]">Location</h2>
-                    <p className="text-[12px] text-[#71717a]">Where did this activity take place?</p>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Form Stack ── */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, ease: EASE }}
+              className="space-y-6"
+            >
+              {/* ── CARD 1: Facility & Location ── */}
+              <div className="rounded-2xl border border-teal-100/80 bg-white p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.03)] hover:border-teal-200 transition-colors">
+                <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-7 items-center justify-center rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-black">
+                      01
+                    </span>
+                    <div>
+                      <h2 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                        <MapPin size={16} className="text-teal-600" weight="bold" />
+                        Facility &amp; Location
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Specify where this emission generating activity took place
+                      </p>
+                    </div>
                   </div>
-                  {step1Done && <CheckCircle size={18} weight="fill" className="ml-auto text-[#16a34a]" />}
+                  {step1Done && (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg">
+                      <CheckCircle size={14} weight="fill" className="text-teal-600" />
+                      Selected
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <CustomSelect
-                    label="Campus" required placeholder="Select campus"
+                    label="Campus Site"
+                    required
+                    placeholder="Select campus"
                     value={campusId}
-                    onChange={v => { setCampusId(v); setBuildingId(""); setFloorId(""); setAssetId(""); }}
-                    options={campuses.map((c: any) => ({ value: c.id, label: c.name }))}
+                    onChange={(v) => {
+                      setCampusId(v);
+                      setBuildingId("");
+                      setFloorId("");
+                      setAssetId("");
+                    }}
+                    options={campuses.map((c: any) => ({
+                      value: c.id,
+                      label: c.name,
+                    }))}
                   />
                   <CustomSelect
-                    label="Building" placeholder="Select building (optional)"
+                    label="Building / Facility"
+                    placeholder="Select building (optional)"
                     value={buildingId}
-                    onChange={v => { setBuildingId(v); setFloorId(""); setAssetId(""); }}
-                    options={buildings.map((b: any) => ({ value: b.id, label: b.name }))}
+                    onChange={(v) => {
+                      setBuildingId(v);
+                      setFloorId("");
+                      setAssetId("");
+                    }}
+                    options={buildings.map((b: any) => ({
+                      value: b.id,
+                      label: b.name,
+                    }))}
                     disabled={!campusId}
                   />
                   <CustomSelect
-                    label="Floor" placeholder="Select floor (optional)"
-                    value={floorId} onChange={v => { setFloorId(v); setAssetId(""); }}
-                    options={floors.map((f: any) => ({ value: f.id, label: f.name }))}
+                    label="Floor / Department"
+                    placeholder="Select floor (optional)"
+                    value={floorId}
+                    onChange={(v) => {
+                      setFloorId(v);
+                      setAssetId("");
+                    }}
+                    options={floors.map((f: any) => ({
+                      value: f.id,
+                      label: f.name,
+                    }))}
                     disabled={!buildingId}
                   />
                 </div>
 
-                {/* Asset */}
-                <div className="mt-4 rounded-[10px] bg-[#f8f8fa] border border-[#f0f0f0] p-4">
+                {/* Asset / Equipment sub-card */}
+                <div className="mt-5 rounded-xl bg-gradient-to-br from-[#f8fafc] to-[#f0fbf9]/60 border border-teal-100/70 p-4">
                   <div className="mb-2.5 flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[#52525b]">Asset / Equipment <span className="font-normal text-[#a1a1aa]">(optional)</span></span>
+                    <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                      <Buildings size={14} className="text-teal-600" weight="bold" />
+                      Specific Equipment / Meter{" "}
+                      <span className="text-[11px] font-medium text-slate-400">
+                        (optional)
+                      </span>
+                    </span>
                     {!addingAsset && (
-                      <button type="button" onClick={() => setAddingAsset(true)} disabled={!campusId} className="flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed">
-                        <Plus size={12} weight="bold" /> Add Asset
+                      <button
+                        type="button"
+                        onClick={() => setAddingAsset(true)}
+                        disabled={!campusId}
+                        className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 hover:text-teal-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      >
+                        <Plus size={13} weight="bold" /> Add New Asset
                       </button>
                     )}
                   </div>
                   {addingAsset ? (
                     <div className="flex gap-2">
-                      <input type="text" placeholder="e.g. Main Diesel Generator" value={newAssetName} onChange={e => setNewAssetName(e.target.value)}
-                        className="flex-1 rounded-[8px] border border-[#e4e4e7] bg-white px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10" />
-                      <button type="button" onClick={handleCreateAsset} disabled={!newAssetName || !campusId}
-                        className="rounded-[8px] bg-indigo-600 px-3 py-2 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-40">Save</button>
-                      <button type="button" onClick={() => { setAddingAsset(false); setNewAssetName(""); }}
-                        className="rounded-[8px] border border-[#e4e4e7] bg-white px-3 py-2 text-sm text-[#52525b] hover:bg-[#f4f4f5]">
+                      <input
+                        type="text"
+                        placeholder="e.g. 500kVA DG Set #1, Central Chiller A"
+                        value={newAssetName}
+                        onChange={(e) => setNewAssetName(e.target.value)}
+                        className="flex-1 rounded-xl border border-teal-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateAsset}
+                        disabled={!newAssetName || !campusId}
+                        className="rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 px-4 py-2 text-xs font-bold text-white shadow-2xs hover:from-teal-500 hover:to-cyan-500 disabled:opacity-40 cursor-pointer"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddingAsset(false);
+                          setNewAssetName("");
+                        }}
+                        className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 cursor-pointer"
+                      >
                         <X size={14} weight="bold" />
                       </button>
                     </div>
                   ) : (
-                    <CustomSelect label="" placeholder="Select asset or leave blank" value={assetId} onChange={setAssetId}
-                      options={assets.map((a: any) => ({ value: a.id, label: a.name }))} disabled={!campusId} />
+                    <CustomSelect
+                      label=""
+                      placeholder="Select tagged asset or leave blank"
+                      value={assetId}
+                      onChange={setAssetId}
+                      options={assets.map((a: any) => ({
+                        value: a.id,
+                        label: a.name,
+                      }))}
+                      disabled={!campusId}
+                    />
                   )}
                 </div>
               </div>
 
-              {/* ── CARD 2: Activity Type ─────────────────────────────── */}
-              <div className="rounded-[16px] border border-[#e4e4e7] bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#fefce8] text-[#ca8a04]">
-                    <Leaf size={16} weight="fill" />
+              {/* ── CARD 2: Activity Category ── */}
+              <div className="rounded-2xl border border-teal-100/80 bg-white p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.03)] hover:border-teal-200 transition-colors">
+                <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-7 items-center justify-center rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-black">
+                      02
+                    </span>
+                    <div>
+                      <h2 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                        <Leaf size={16} className="text-teal-600" weight="bold" />
+                        Activity Category
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Choose the primary emission source classification
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-[14px] font-bold text-[#18181b]">Activity Type</h2>
-                    <p className="text-[12px] text-[#71717a]">What kind of emission source is this?</p>
-                  </div>
-                  {step2Done && <CheckCircle size={18} weight="fill" className="ml-auto text-[#16a34a]" />}
+                  {step2Done && (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg">
+                      <CheckCircle size={14} weight="fill" className="text-teal-600" />
+                      {selectedCat?.label}
+                    </span>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {CATEGORIES.map(cat => {
+                  {CATEGORIES.map((cat) => {
                     const isSelected = category === cat.key;
                     return (
                       <button
                         key={cat.key}
                         type="button"
                         onClick={() => handleCategorySelect(cat.key)}
-                        className="group relative flex flex-col items-start rounded-[12px] border-2 p-3.5 text-left transition-all"
-                        style={{
-                          borderColor: isSelected ? cat.color : "#e4e4e7",
-                          background: isSelected ? cat.bg : "#fff",
-                        }}
+                        className={`group relative flex flex-col items-start rounded-2xl border-2 p-4 text-left transition-all cursor-pointer ${
+                          isSelected
+                            ? "border-teal-500 bg-gradient-to-b from-teal-50/90 to-cyan-50/50 shadow-md ring-2 ring-teal-500/20"
+                            : "border-slate-200/90 bg-slate-50/50 hover:border-teal-300 hover:bg-white"
+                        }`}
                       >
-                        <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-[8px]" style={{ background: isSelected ? cat.color + "22" : "#f4f4f5" }}>
-                          <cat.Icon size={16} weight="fill" style={{ color: isSelected ? cat.color : "#71717a" }} />
+                        <div
+                          className="mb-3 flex size-9 items-center justify-center rounded-xl transition-transform group-hover:scale-105"
+                          style={{
+                            background: isSelected
+                              ? "linear-gradient(135deg, #0d9488, #06b6d4)"
+                              : "#e2e8f0",
+                            color: isSelected ? "#ffffff" : "#475569",
+                          }}
+                        >
+                          <cat.Icon size={18} weight="fill" />
                         </div>
-                        <p className="text-[13px] font-bold leading-tight" style={{ color: isSelected ? "#18181b" : "#3f3f46" }}>{cat.label}</p>
-                        <p className="mt-0.5 text-[11px] leading-tight" style={{ color: isSelected ? "#52525b" : "#a1a1aa" }}>{cat.sub}</p>
-                        <span className="mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold"
-                          style={{ background: cat.scope === "SCOPE_1" ? "#fef2f2" : "#eff6ff", color: cat.scope === "SCOPE_1" ? "#ef4444" : "#3b82f6" }}>
-                          {cat.scope.replace("_", " ")}
-                        </span>
-                        {isSelected && <CheckCircle size={14} weight="fill" className="absolute right-2.5 top-2.5" style={{ color: cat.color }} />}
+                        <p className="text-xs font-bold text-slate-900 leading-tight">
+                          {cat.label}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-500 leading-tight font-medium">
+                          {cat.sub}
+                        </p>
+
+                        <div className="mt-3 flex items-center justify-between w-full">
+                          <span
+                            className={`inline-block rounded-md px-2 py-0.5 text-[9.5px] font-extrabold uppercase tracking-wider ${
+                              cat.scope === "SCOPE_1"
+                                ? "bg-amber-100 text-amber-900 border border-amber-200"
+                                : "bg-teal-100 text-teal-900 border border-teal-200"
+                            }`}
+                          >
+                            {cat.scope.replace("_", " ")}
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-400">
+                            {cat.unit}
+                          </span>
+                        </div>
+
+                        {isSelected && (
+                          <CheckCircle
+                            size={16}
+                            weight="fill"
+                            className="absolute right-3 top-3 text-teal-600"
+                          />
+                        )}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* ── CARD 3: Quantity ──────────────────────────────────── */}
-              <div className={`rounded-[16px] border border-[#e4e4e7] bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-opacity ${!category ? "opacity-50" : "opacity-100"}`}>
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-[8px]" style={{ background: selectedCat ? selectedCat.bg : "#f4f4f5" }}>
-                    {selectedCat ? <selectedCat.Icon size={16} weight="fill" style={{ color: selectedCat.color }} /> : <Leaf size={16} weight="fill" className="text-[#a1a1aa]" />}
+              {/* ── CARD 3: Consumption & Activity Quantity ── */}
+              <div
+                className={`rounded-2xl border border-teal-100/80 bg-white p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.03)] hover:border-teal-200 transition-all ${
+                  !category ? "opacity-60" : "opacity-100"
+                }`}
+              >
+                <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-7 items-center justify-center rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-black">
+                      03
+                    </span>
+                    <div>
+                      <h2 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                        <Gauge size={16} className="text-teal-600" weight="bold" />
+                        {selectedCat
+                          ? `${selectedCat.label} Consumption Metrics`
+                          : "Consumption Metrics"}
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        {selectedCat
+                          ? `Enter the net consumption value recorded during the billing interval.`
+                          : "Select an activity category above to activate quantity inputs"}
+                      </p>
+                    </div>
                   </div>
+                  {step3Done && (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg">
+                      <CheckCircle size={14} weight="fill" className="text-teal-600" />
+                      {quantity} {unit}
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="mb-1.5 flex items-center justify-between text-xs font-bold text-slate-700">
+                      <span>
+                        Net Quantity <span className="text-teal-600">*</span>
+                      </span>
+                      {selectedCat && (
+                        <span className="text-[11px] font-semibold text-teal-700">
+                          Default Unit: {selectedCat.unit}
+                        </span>
+                      )}
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        placeholder="e.g. 14250.00"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        disabled={!category}
+                        className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-bold text-slate-900 outline-none transition focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15 disabled:bg-slate-50 disabled:cursor-not-allowed placeholder:text-slate-400"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <h2 className="text-[14px] font-bold text-[#18181b]">
-                      {selectedCat ? `${selectedCat.label} Consumption` : "Consumption"}
-                    </h2>
-                    <p className="text-[12px] text-[#71717a]">{selectedCat ? `Enter the actual ${selectedCat.label.toLowerCase()} consumed. Default unit: ${selectedCat.unit}` : "Select an activity type first"}</p>
-                  </div>
-                  {step3Done && <CheckCircle size={18} weight="fill" className="ml-auto text-[#16a34a]" />}
-                </div>
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="mb-1.5 block text-xs font-semibold text-[#52525b]">Quantity <span className="text-red-500">*</span></label>
+                    <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                      Reporting Unit <span className="text-teal-600">*</span>
+                    </label>
                     <input
-                      type="number" min="0" placeholder="0.00"
-                      value={quantity} onChange={e => setQuantity(e.target.value)}
+                      type="text"
+                      placeholder="Unit (e.g. kWh, L, kg)"
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
                       disabled={!category}
-                      className="w-full rounded-[10px] border border-[#e4e4e7] px-3.5 py-2.5 text-sm font-medium text-[#18181b] outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 disabled:bg-[#f4f4f5] disabled:cursor-not-allowed placeholder:text-[#a1a1aa]"
-                    />
-                  </div>
-                  <div className="w-28 shrink-0">
-                    <label className="mb-1.5 block text-xs font-semibold text-[#52525b]">Unit <span className="text-red-500">*</span></label>
-                    <input
-                      type="text" placeholder="Unit"
-                      value={unit} onChange={e => setUnit(e.target.value)}
-                      disabled={!category}
-                      className="w-full rounded-[10px] border border-[#e4e4e7] bg-[#f8f8fa] px-3.5 py-2.5 text-sm font-semibold text-[#18181b] outline-none transition focus:border-indigo-500 disabled:cursor-not-allowed placeholder:text-[#a1a1aa]"
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-sm font-extrabold text-slate-900 outline-none transition focus:border-teal-500 disabled:cursor-not-allowed placeholder:text-slate-400"
                     />
                   </div>
                 </div>
+
+                {selectedCat && (
+                  <div className="mt-4 flex items-center gap-2 rounded-xl bg-teal-50/70 border border-teal-200/70 px-3.5 py-2.5 text-xs text-teal-900 font-medium">
+                    <Info size={15} weight="bold" className="text-teal-600 shrink-0" />
+                    <span>
+                      Standard GHG emissions factors will automatically calculate CO₂e based on <strong>{unit || selectedCat.unit}</strong>.
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* ── CARD 4: Date & Period ─────────────────────────────── */}
-              <div className="rounded-[16px] border border-[#e4e4e7] bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#f0fdf4] text-[#16a34a]">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-96-88a8,8,0,0,1-8,8H88a8,8,0,0,1,0-16h16A8,8,0,0,1,112,120Zm48,0a8,8,0,0,1-8,8H136a8,8,0,0,1,0-16h16A8,8,0,0,1,160,120Zm-48,40a8,8,0,0,1-8,8H88a8,8,0,0,1,0-16h16A8,8,0,0,1,112,160Zm48,0a8,8,0,0,1-8,8H136a8,8,0,0,1,0-16h16A8,8,0,0,1,160,160Z"/></svg>
+              {/* ── CARD 4: Date & Accounting Period ── */}
+              <div className="rounded-2xl border border-teal-100/80 bg-white p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.03)] hover:border-teal-200 transition-colors">
+                <div className="mb-5 flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-7 items-center justify-center rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-black">
+                      04
+                    </span>
+                    <div>
+                      <h2 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                        <CalendarBlank size={16} className="text-teal-600" weight="bold" />
+                        Date &amp; Accounting Period
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Align this data point with active reporting cycles
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-[14px] font-bold text-[#18181b]">Date &amp; Reporting Period</h2>
-                    <p className="text-[12px] text-[#71717a]">When did this activity happen?</p>
-                  </div>
-                  {step4Done && <CheckCircle size={18} weight="fill" className="ml-auto text-[#16a34a]" />}
+                  {step4Done && (
+                    <span className="inline-flex items-center gap-1 text-xs font-bold text-teal-700 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-lg">
+                      <CheckCircle size={14} weight="fill" className="text-teal-600" />
+                      Assigned
+                    </span>
+                  )}
                 </div>
+
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-[#52525b]">Activity Date <span className="text-red-500">*</span></label>
-                    <input type="date" value={activityDate} onChange={e => setActivityDate(e.target.value)}
-                      className="w-full rounded-[10px] border border-[#e4e4e7] bg-white px-3.5 py-2.5 text-sm text-[#18181b] outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10" />
+                    <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                      Activity / Bill Date <span className="text-teal-600">*</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={activityDate}
+                      onChange={(e) => setActivityDate(e.target.value)}
+                      className="h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-900 outline-none transition focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15"
+                    />
                   </div>
                   <CustomSelect
-                    label="Reporting Period" required placeholder="Select period"
-                    value={periodId} onChange={setPeriodId}
-                    options={periods.map(p => ({ value: p.id, label: p.name }))}
+                    label="Assigned Reporting Period"
+                    required
+                    placeholder="Select active reporting period"
+                    value={periodId}
+                    onChange={setPeriodId}
+                    options={periods.map((p) => ({
+                      value: p.id,
+                      label: p.name,
+                    }))}
                   />
                 </div>
               </div>
 
-              {/* ── CARD 5: Source & Notes ────────────────────────────── */}
-              <div className="rounded-[16px] border border-[#e4e4e7] bg-white p-6 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#faf5ff] text-[#9333ea]">
-                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 256 256"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-32-80a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,136Zm0,32a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,168Z"/></svg>
-                  </div>
+              {/* ── CARD 5: Source & Verification Notes ── */}
+              <div className="rounded-2xl border border-teal-100/80 bg-white p-5 sm:p-6 shadow-[0_8px_30px_rgba(13,148,136,0.03)] hover:border-teal-200 transition-colors">
+                <div className="mb-5 flex items-center gap-3 border-b border-slate-100 pb-4">
+                  <span className="flex size-7 items-center justify-center rounded-lg bg-teal-50 border border-teal-200 text-teal-800 text-xs font-black">
+                    05
+                  </span>
                   <div>
-                    <h2 className="text-[14px] font-bold text-[#18181b]">Source &amp; Notes</h2>
-                    <p className="text-[12px] text-[#71717a]">Evidence and additional context</p>
+                    <h2 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+                      <FileText size={16} className="text-teal-600" weight="bold" />
+                      Source &amp; Verification Notes
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Audit trail documentation and evidence type
+                    </p>
                   </div>
                 </div>
+
                 <div className="space-y-4">
-                  <CustomSelect label="Data Source" placeholder="Select source type" value={dataSource} onChange={setDataSource}
-                    options={["Utility Bill","Meter Reading","Invoice","Estimated","Manual Entry"].map(v => ({ value: v, label: v }))} />
+                  <CustomSelect
+                    label="Primary Data Source"
+                    placeholder="Select source document type"
+                    value={dataSource}
+                    onChange={setDataSource}
+                    options={[
+                      "Utility Bill",
+                      "Meter Reading",
+                      "Fuel Invoice / Receipt",
+                      "SCADA / BMS Telemetry",
+                      "Supplier Statement",
+                      "Estimated / Extrapolated",
+                      "Manual Entry",
+                    ].map((v) => ({ value: v, label: v }))}
+                  />
+
                   <div>
-                    <label className="mb-1.5 block text-xs font-semibold text-[#52525b]">Notes / Reason <span className="font-normal text-[#a1a1aa]">(optional)</span></label>
+                    <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                      Auditor Notes / Reference{" "}
+                      <span className="font-normal text-slate-400">
+                        (optional)
+                      </span>
+                    </label>
                     <textarea
-                      rows={3} placeholder="Any additional context or explanation..."
-                      value={notes} onChange={e => setNotes(e.target.value)}
-                      className="w-full resize-none rounded-[10px] border border-[#e4e4e7] px-3.5 py-2.5 text-sm text-[#18181b] outline-none transition placeholder:text-[#a1a1aa] focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                      rows={3}
+                      placeholder="e.g. Invoice #EB-2024-0988 from State Electricity Board. Sub-meter ID: SM-04."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="w-full resize-none rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-medium text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-teal-500 focus:ring-3 focus:ring-teal-500/15"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* ── ACTION BAR ───────────────────────────────────────── */}
-              <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[#e4e4e7] bg-white px-6 py-4 shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-                <p className="text-[12px] text-[#a1a1aa]">
-                  {[step1Done, step2Done, step3Done, step4Done].filter(Boolean).length} of 4 required sections completed
-                </p>
-                <div className="flex items-center gap-2">
-                  <button onClick={() => router.push("/activity-data")} disabled={saving}
-                    className="rounded-[8px] border border-[#e4e4e7] bg-white px-4 py-2 text-[13px] font-semibold text-[#52525b] hover:bg-[#f4f4f5] transition-colors">
-                    Cancel
-                  </button>
-                  <button onClick={() => handleSave("DRAFT")} disabled={saving}
-                    className="flex items-center gap-2 rounded-[8px] border border-[#e4e4e7] bg-white px-4 py-2 text-[13px] font-bold text-[#18181b] shadow-sm hover:bg-[#f4f4f5] transition-colors disabled:opacity-50">
-                    <FloppyDisk size={14} weight="bold" />
-                    {saving ? "Saving..." : "Save Draft"}
-                  </button>
-                  <button onClick={() => handleSave("SUBMITTED")} disabled={saving}
-                    className="flex items-center gap-2 rounded-[8px] bg-[#16a34a] px-5 py-2 text-[13px] font-bold text-white shadow-sm hover:bg-[#15803d] transition-colors disabled:opacity-50">
-                    <PaperPlaneRight size={14} weight="bold" />
-                    {saving ? "Submitting..." : "Submit for Review"}
-                  </button>
+              {/* ── Sticky Action Bar ── */}
+              <div className="sticky bottom-4 z-30 rounded-2xl border border-teal-200/90 bg-white/95 p-4 shadow-[0_12px_40px_rgba(13,148,136,0.12)] backdrop-blur-xl">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                    <span className="flex size-2 rounded-full bg-teal-500 animate-pulse" />
+                    <span>
+                      {completedCount} of 4 mandatory steps ready for intake
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 w-full sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={() => router.push("/activity-data")}
+                      disabled={saving}
+                      className="flex-1 sm:flex-none rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSave("DRAFT")}
+                      disabled={saving}
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50/80 px-4 py-2.5 text-xs font-bold text-teal-900 hover:bg-teal-100 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      <FloppyDisk size={14} weight="bold" />
+                      <span>{saving ? "Saving..." : "Save Draft"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSave("SUBMITTED")}
+                      disabled={saving || completedCount < 4}
+                      className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-teal-600 via-cyan-600 to-sky-600 px-6 py-2.5 text-xs font-bold text-white shadow-[0_4px_16px_rgba(13,148,136,0.25)] hover:from-teal-500 hover:via-cyan-500 hover:to-sky-500 active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <PaperPlaneRight size={14} weight="bold" />
+                      <span>{saving ? "Submitting..." : "Submit for Verification"}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-
             </motion.div>
           </div>
         </main>
