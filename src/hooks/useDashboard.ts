@@ -1,6 +1,33 @@
 import { useState, useEffect } from 'react';
 import { getDashboardSummary, ContextError } from '../lib/api';
 import { useReportingPeriod } from './useReportingPeriod';
+
+/**
+ * Numeric coercion for backend payloads.
+ *
+ * Postgres `numeric` columns arrive as strings, and decimal sums are often
+ * stringified before serialization. Calling `.toFixed()` directly on such a
+ * value throws `toFixed is not a function`, which would abort the whole
+ * mapper and leave every KPI at zero. Always funnel through `num()`.
+ */
+function num(value: unknown): number {
+  const parsed = typeof value === "number" ? value : parseFloat(String(value ?? ""));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function round(value: unknown, decimals = 2): number {
+  const factor = 10 ** decimals;
+  return Math.round(num(value) * factor) / factor;
+}
+
+/** Converts a backend `YYYY-MM` month key into a short display label. */
+function monthLabel(month: string): string {
+  const match = /^(\d{4})-(\d{2})$/.exec(month);
+  if (!match) return month;
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, 1);
+  return date.toLocaleString("default", { month: "short" });
+}
+
 const EMPTY_DATA = {
   MONTHLY: [],
   TOTAL_12M: 0,
@@ -126,19 +153,18 @@ function mapBackendToFrontend(backendData: any) {
   const b = backendData;
 
   const MONTHLY = (b.trends || []).map((t: any) => {
-    const d = new Date(t.month);
     return {
-      month: d.toLocaleString('default', { month: 'short' }),
-      total: Math.round(t.totalKg / 1000),
-      scope1: Math.round(t.scope1Kg / 1000),
-      scope2: Math.round(t.scope2Kg / 1000),
+      month: monthLabel(String(t.month ?? "")),
+      total: round(num(t.totalKg) / 1000, 2),
+      scope1: round(num(t.scope1Kg) / 1000, 2),
+      scope2: round(num(t.scope2Kg) / 1000, 2),
     };
   });
 
-  const TOTAL_12M = parseFloat((b.overview?.totalEmissionsTonnes || 0).toFixed(2));
-  const SCOPE1_12M = parseFloat((b.overview?.scope1Tonnes || 0).toFixed(2));
-  const SCOPE2_12M = parseFloat((b.overview?.scope2Tonnes || 0).toFixed(2));
-  const SCOPE3_12M = parseFloat((b.overview?.scope3Tonnes || 0).toFixed(2));
+  const TOTAL_12M = round(b.overview?.totalEmissionsTonnes);
+  const SCOPE1_12M = round(b.overview?.scope1Tonnes);
+  const SCOPE2_12M = round(b.overview?.scope2Tonnes);
+  const SCOPE3_12M = round(b.overview?.scope3Tonnes);
 
   const SCOPES = [
     { key: "scope1", name: "Scope 1 — Direct", value: SCOPE1_12M, share: TOTAL_12M ? SCOPE1_12M / TOTAL_12M : 0, color: "#0f766e" },
@@ -146,11 +172,11 @@ function mapBackendToFrontend(backendData: any) {
   ];
 
   const CATEGORIES = (b.categories || []).map((c: any) => ({
-    name: c.category.replace(/_/g, ' ').toLowerCase(),
+    name: String(c.category ?? "").replace(/_/g, " ").toLowerCase(),
     scope: c.scope === "SCOPE_1" ? "S1" : c.scope === "SCOPE_2" ? "S2" : "S3",
-    value: parseFloat((c.tonnesCO2e || 0).toFixed(2)),
-    share: TOTAL_12M ? c.tonnesCO2e / TOTAL_12M : 0,
-    trend: c.trend || 0,
+    value: round(c.tonnesCO2e),
+    share: TOTAL_12M ? num(c.tonnesCO2e) / TOTAL_12M : 0,
+    trend: round(c.trend, 1),
     sources: 1,
   }));
 
@@ -160,9 +186,9 @@ function mapBackendToFrontend(backendData: any) {
       value: TOTAL_12M,
       decimals: 2,
       suffix: " tCO₂e",
-      delta: b.overview?.delta || 0,
+      delta: round(b.overview?.delta, 1),
       deltaLabel: "vs last 12 months",
-      good: (b.overview?.delta || 0) <= 0,
+      good: round(b.overview?.delta, 1) <= 0,
       spark: MONTHLY.map((m: any) => m.total),
     },
     {
@@ -170,7 +196,7 @@ function mapBackendToFrontend(backendData: any) {
       value: SCOPE1_12M,
       decimals: 2,
       suffix: " tCO₂e",
-      delta: TOTAL_12M ? Number((SCOPE1_12M / TOTAL_12M * 100).toFixed(1)) : 0,
+      delta: TOTAL_12M ? round((SCOPE1_12M / TOTAL_12M) * 100, 1) : 0,
       deltaLabel: "share of total",
       good: false,
       spark: MONTHLY.map((m: any) => m.scope1),
@@ -180,20 +206,20 @@ function mapBackendToFrontend(backendData: any) {
       value: SCOPE2_12M,
       decimals: 2,
       suffix: " tCO₂e",
-      delta: TOTAL_12M ? Number((SCOPE2_12M / TOTAL_12M * 100).toFixed(1)) : 0,
+      delta: TOTAL_12M ? round((SCOPE2_12M / TOTAL_12M) * 100, 1) : 0,
       deltaLabel: "share of total",
       good: false,
       spark: MONTHLY.map((m: any) => m.scope2),
     },
     {
       label: "Reduction vs baseline",
-      value: b.overview?.reductionPercentage || 0,
+      value: round(b.overview?.reductionPercentage, 1),
       decimals: 1,
       suffix: "%",
-      delta: 0,
-      deltaLabel: "of baseline",
-      good: (b.overview?.reductionPercentage || 0) > 0,
-      spark: [],
+      delta: b.overview?.hasBaseline === false ? 0 : round(b.overview?.delta, 1),
+      deltaLabel: b.overview?.hasBaseline === false ? "no baseline set" : "of baseline",
+      good: round(b.overview?.reductionPercentage, 1) > 0,
+      spark: MONTHLY.map((m: any) => m.total),
     },
   ];
 
@@ -207,12 +233,12 @@ function mapBackendToFrontend(backendData: any) {
       color: "#15803d",
       share: TOTAL_12M ? SCOPE1_12M / TOTAL_12M : 0,
       total: SCOPE1_12M,
-      delta: b.scopeBreakdown?.scope1?.delta || 0,
-      intensity: b.intensity?.tonnesPerStudent || 0,
+      delta: round(b.scopeBreakdown?.scope1?.delta, 1),
+      intensity: round(b.intensity?.tonnesPerStudent, 2),
       monthly: MONTHLY.map((m: any) => ({ month: m.month, value: m.scope1 })),
       sources: (b.categories || [])
         .filter((c: any) => c.scope === "SCOPE_1")
-        .map((c: any) => ({ name: c.category, value: parseFloat((c.tonnesCO2e || 0).toFixed(2)), share: SCOPE1_12M ? c.tonnesCO2e / SCOPE1_12M : 0 })),
+        .map((c: any) => ({ name: c.category, value: round(c.tonnesCO2e), share: SCOPE1_12M ? num(c.tonnesCO2e) / SCOPE1_12M : 0 })),
     },
     {
       key: "scope2",
@@ -223,12 +249,12 @@ function mapBackendToFrontend(backendData: any) {
       color: "#22c55e",
       share: TOTAL_12M ? SCOPE2_12M / TOTAL_12M : 0,
       total: SCOPE2_12M,
-      delta: b.scopeBreakdown?.scope2?.delta || 0,
-      intensity: b.intensity?.kgPerSqm || 0,
+      delta: round(b.scopeBreakdown?.scope2?.delta, 1),
+      intensity: round(b.intensity?.kgPerSqm, 2),
       monthly: MONTHLY.map((m: any) => ({ month: m.month, value: m.scope2 })),
       sources: (b.categories || [])
         .filter((c: any) => c.scope === "SCOPE_2")
-        .map((c: any) => ({ name: c.category, value: parseFloat((c.tonnesCO2e || 0).toFixed(2)), share: SCOPE2_12M ? c.tonnesCO2e / SCOPE2_12M : 0 })),
+        .map((c: any) => ({ name: c.category, value: round(c.tonnesCO2e), share: SCOPE2_12M ? num(c.tonnesCO2e) / SCOPE2_12M : 0 })),
     },
   ];
 
