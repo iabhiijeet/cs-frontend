@@ -196,7 +196,7 @@ export default function DocumentsPage() {
                               </div>
                             </td>
                             <td className="px-[16px] py-[14px] text-[13px] text-[#52525b]">
-                              {doc.documentType.replace(/_/g, " ")}
+                              {doc.documentType?.replace(/_/g, " ") ?? doc.category?.replace(/_/g, " ") ?? "—"}
                             </td>
                             <td className="px-[16px] py-[14px] text-[13px] text-[#71717a]">
                               {new Date(doc.createdAt).toLocaleDateString("en-GB", { day: 'numeric', month: 'short', year: 'numeric' })}

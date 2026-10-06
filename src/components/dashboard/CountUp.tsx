@@ -17,7 +17,7 @@ export default function CountUp({ value, decimals = 0, suffix = "", prefix = "",
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-20px" });
   const mv = useMotionValue(0);
-  const display = useTransform(mv, (v) => `${v.toFixed(decimals)}`);
+  const display = useTransform(mv, (v) => `${v.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`);
 
   useEffect(() => {
     if (!inView) return;
