@@ -1,0 +1,17 @@
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import ContactSection from "@/components/sections/contact/ContactSection";
+
+export default function ContactPage() {
+  return (
+    <div className="relative font-sans">
+      <Header />
+
+      <main>
+        <ContactSection />
+      </main>
+
+      <Footer />
+    </div>
+  );
+}
