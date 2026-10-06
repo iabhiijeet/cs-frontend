@@ -2,298 +2,226 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  AlertCircle,
-  ShieldCheck,
-  CheckCircle2,
-  Globe2,
-  Quote,
-} from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
 import { login } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import Logo from '@/components/ui/Logo';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { EASE, fadeUp, stagger } from '@/lib/animations';
+
+const TRUST_STATS = [
+  { value: '4.2M tCO₂e', label: 'Emissions tracked' },
+  { value: '128k offsets', label: 'Verified & retired' },
+  { value: 'GHG Protocol', label: 'Fully aligned' },
+];
 
 export default function SignInPage() {
   const router = useRouter();
   const { setAuth } = useAuth();
+  const reduced = useReducedMotion();
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+
+  const container = reduced ? { hidden: {}, visible: {} } : stagger(0.08, 0.1);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setIsPending(true);
 
-    const formData = new FormData(e.currentTarget);
-    const email = String(formData.get('email') || '').trim();
-    const password = String(formData.get('password') || '');
-
     try {
       const res = await login(email, password);
       if (!res.success || !res.data?.token) {
-        setError(res.message || 'Invalid email or password. Please verify your credentials.');
+        setError(res.message || 'Failed to sign in. Try again');
         setIsPending(false);
         return;
       }
       setAuth(res.data.token, res.data.user);
+      // Users without an organisation must finish onboarding first —
+      // matches the V2 backend auth flow.
       const destination = res.data.user?.organisationId ? '/dashboard' : '/onboarding';
       router.push(destination);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign in. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to sign in. Try again');
       setIsPending(false);
     }
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:grid lg:grid-cols-12 bg-white font-sans antialiased selection:bg-teal-500/20 overflow-hidden">
-      {/* LEFT COLUMN: Clean Enterprise Brand & Validation Showcase (Light) */}
-      <div className="relative hidden lg:flex lg:col-span-6 xl:col-span-7 flex-col justify-between p-10 xl:p-14 bg-gradient-to-br from-slate-50 via-teal-50/30 to-slate-100/80 border-r border-slate-200/80 text-slate-900 overflow-hidden">
-        {/* Subtle Ambient Glows */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-[10%] -top-[10%] h-[450px] w-[450px] rounded-full bg-teal-200/30 blur-[120px]" />
-          <div className="absolute right-[-5%] bottom-[-5%] h-[400px] w-[400px] rounded-full bg-cyan-200/25 blur-[120px]" />
-          <div
-            className="absolute inset-0 opacity-[0.4]"
-            style={{
-              backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(13, 148, 136, 0.12) 1px, transparent 0)',
-              backgroundSize: '28px 28px',
-            }}
-          />
-        </div>
+    <div className="flex min-h-screen">
+      {/* ── Left Panel — Branding ── */}
+      <div className="relative hidden flex-1 flex-col justify-between overflow-hidden p-[64px] lg:flex xl:p-[80px]">
+        {/* Background wash */}
+        <div className="absolute inset-0 bg-[radial-gradient(120%_90%_at_18%_0%,#ffffff_0%,#f4faf9_48%,#e6f3f2_100%)]" />
 
-        {/* Top Brand & Status */}
-        <div className="relative z-10 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-3 group">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-white border border-slate-200/90 p-2 shadow-xs group-hover:border-teal-400 transition-colors">
-              <Image
-                src="/cr.webp"
-                alt="CarbonSynq"
-                width={28}
-                height={28}
-                className="size-6 object-contain"
-                unoptimized
-              />
-            </div>
-            <div>
-              <span className="text-xl font-extrabold tracking-tight text-slate-900 block leading-none">
+        {/* Faint engineering grid */}
+        <div
+          className="absolute inset-0 opacity-50"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(24,143,139,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(24,143,139,0.05) 1px, transparent 1px)',
+            backgroundSize: '88px 88px',
+            maskImage: 'radial-gradient(75% 65% at 50% 38%, black, transparent)',
+            WebkitMaskImage: 'radial-gradient(75% 65% at 50% 38%, black, transparent)',
+          }}
+        />
+
+        {/* Readability overlay */}
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(100deg,#fbfcfa_6%,rgba(251,252,250,0.86)_30%,rgba(251,252,250,0)_58%)]" />
+
+        {/* Content */}
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="visible"
+          className="relative z-10 flex flex-col"
+        >
+          {/* Logo */}
+          <motion.div variants={fadeUp}>
+            <Link
+              href="/"
+              aria-label="CarbonSynq — back to home"
+              className="inline-flex items-center gap-[14px] rounded-lg transition-opacity duration-200 hover:opacity-70"
+            >
+              <Logo className="h-[52px] w-[52px]" />
+              <span className="font-display text-[28px] font-bold tracking-[-0.5px] text-[#0b1f1e]">
                 CarbonSynq
               </span>
-              <span className="text-[10px] font-bold tracking-wider uppercase text-teal-700 mt-1 block">
-                Carbon Accounting & Intelligence
+            </Link>
+          </motion.div>
+
+          {/* Headline */}
+          <motion.h1
+            variants={fadeUp}
+            className="mt-[56px] max-w-[520px] font-display text-[44px] leading-[1.05] tracking-[-1.2px] text-[#0b1f1e] xl:text-[52px]"
+          >
+            Making your{' '}
+            <em className="not-italic text-[#188f8b]">carbon footprint</em>{' '}
+            lighter than your inbox.
+          </motion.h1>
+
+          {/* Supporting line */}
+          <motion.p
+            variants={fadeUp}
+            className="mt-[24px] max-w-[440px] text-[16px] leading-[1.6] tracking-[-0.15px] text-[#5f706e]"
+          >
+            Measure every tonne with audit-grade precision — then cut what
+            matters. Built for accuracy, designed to make decarbonization
+            measurable.
+          </motion.p>
+        </motion.div>
+
+        {/* Trust stats */}
+        <motion.div
+          variants={container}
+          initial="hidden"
+          animate="visible"
+          className="relative z-10 flex flex-wrap items-center gap-x-[36px] gap-y-[16px]"
+        >
+          {TRUST_STATS.map((stat) => (
+            <motion.div key={stat.label} variants={fadeUp} className="flex items-baseline gap-[10px]">
+              <span className="font-display text-[18px] text-[#0b1f1e]">{stat.value}</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#92a5a3]">
+                {stat.label}
               </span>
-            </div>
-          </Link>
-
-          <div className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/90 px-3 py-1 text-xs font-semibold text-teal-800 shadow-2xs backdrop-blur-md">
-            <span className="size-1.5 rounded-full bg-teal-500 animate-pulse" />
-            <span>GHG Protocol & BRSR Verified</span>
-          </div>
-        </div>
-
-        {/* Main Narrative & Value Showcase */}
-        <div className="relative z-10 my-auto py-6 max-w-xl">
-          <h1 className="text-3xl xl:text-4xl font-extrabold tracking-tight text-slate-900 leading-[1.2]">
-            The enterprise carbon ledger for modern sustainability leaders.
-          </h1>
-
-          <p className="mt-4 text-sm xl:text-base text-slate-600 leading-relaxed font-normal">
-            Automate Scope 1, 2, and 3 emissions accounting across global facilities, utility providers,
-            and supply chain networks with mathematical audit traceability.
-          </p>
-
-          {/* Testimonial Quote Card */}
-          <div className="mt-8 rounded-2xl border border-slate-200/90 bg-white/90 p-5 shadow-xs backdrop-blur-md">
-            <Quote className="size-5 text-teal-600/70 mb-2.5" />
-            <p className="text-sm text-slate-700 leading-relaxed italic">
-              &ldquo;CarbonSynq unified our emission calculations across 38 manufacturing sites. We reduced our
-              audit preparation cycle from 6 weeks to 3 business days.&rdquo;
-            </p>
-            <div className="mt-4 flex items-center justify-between pt-3 border-t border-slate-100 text-xs">
-              <div>
-                <span className="font-bold text-slate-900 block">Dr. Arthur Vance</span>
-                <span className="text-slate-500 text-[11px] block">Global Head of Sustainability Â· CleanEnergy Corp</span>
-              </div>
-              <span className="text-[10px] font-bold text-teal-800 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-full">
-                Verified Customer
-              </span>
-            </div>
-          </div>
-
-          {/* 3 Metrics Ribbon */}
-          <div className="mt-8 grid grid-cols-3 gap-3 pt-6 border-t border-slate-200/80 text-xs">
-            <div>
-              <span className="text-2xl font-black text-slate-900 block">1.8M+</span>
-              <span className="text-[11px] text-slate-500 font-semibold">tCOâ‚‚e Measured</span>
-            </div>
-            <div>
-              <span className="text-2xl font-black text-teal-600 block">500+</span>
-              <span className="text-[11px] text-slate-500 font-semibold">Emission Factor DBs</span>
-            </div>
-            <div>
-              <span className="text-2xl font-black text-slate-900 block">100%</span>
-              <span className="text-[11px] text-slate-500 font-semibold">Audit Readiness</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Security Footer */}
-        <div className="relative z-10 flex items-center justify-between text-xs text-slate-500 pt-6 border-t border-slate-200/80 shrink-0 font-medium">
-          <span className="flex items-center gap-1.5">
-            <ShieldCheck className="size-4 text-teal-600" />
-            SOC 2 Type II Certified
-          </span>
-          <span className="flex items-center gap-1.5">
-            <CheckCircle2 className="size-3.5 text-teal-600" />
-            ISO 14064 Compliant
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Globe2 className="size-3.5 text-teal-600" />
-            PCAF Data Quality Tier 1
-          </span>
-        </div>
+            </motion.div>
+          ))}
+        </motion.div>
       </div>
 
-      {/* RIGHT COLUMN: Clean Studio Form (Light) */}
-      <div className="flex-1 lg:col-span-6 xl:col-span-5 flex flex-col justify-center items-center px-6 py-8 sm:px-10 lg:px-12 xl:px-16 min-h-screen bg-white">
+      {/* ── Right Panel — Login Form ── */}
+      <div className="flex flex-1 items-center justify-center px-[24px] py-[48px] lg:max-w-[520px] lg:px-[48px]">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-          className="w-full max-w-[380px] mx-auto"
+          variants={container}
+          initial="hidden"
+          animate="visible"
+          className="w-full max-w-[400px]"
         >
-          {/* Mobile Header */}
-          <div className="lg:hidden text-center mb-6">
-            <Link href="/" className="inline-flex items-center gap-2.5 mb-2">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-teal-600 text-white p-1.5">
-                <Image src="/cr.webp" alt="CarbonSynq" width={24} height={24} className="size-5 object-contain" unoptimized />
-              </div>
-              <span className="text-xl font-bold tracking-tight text-slate-900">CarbonSynq</span>
-            </Link>
-          </div>
-
-          {/* Form Header */}
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Sign in to your account</h2>
-            <p className="text-xs text-slate-500 mt-1 font-medium">
-              Enter your work credentials to access the carbon workspace.
-            </p>
-          </div>
-
-          {/* Tab Switcher */}
-          <div className="grid grid-cols-2 p-1 bg-slate-100 rounded-xl mb-6 text-xs font-semibold border border-slate-200/70">
-            <span className="flex items-center justify-center py-1.5 px-3 rounded-lg bg-white text-slate-900 shadow-2xs font-bold">
-              Sign In
-            </span>
+          {/* Mobile logo */}
+          <motion.div variants={fadeUp} className="mb-[32px] lg:hidden">
             <Link
-              href="/auth/signup"
-              className="flex items-center justify-center py-1.5 px-3 rounded-lg text-slate-600 hover:text-slate-900 transition-colors"
+              href="/"
+              aria-label="CarbonSynq — back to home"
+              className="inline-flex items-center gap-[12px] rounded-lg transition-opacity duration-200 hover:opacity-70"
             >
-              Request Access
+              <Logo className="h-[40px] w-[40px]" />
+              <span className="font-display text-[22px] font-bold tracking-[-0.5px] text-[#0b1f1e]">
+                CarbonSynq
+              </span>
             </Link>
-          </div>
+          </motion.div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Work Email */}
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-xs font-semibold text-slate-800">
-                Work Email
-              </label>
-              <div className="relative flex items-center">
-                <span className="absolute left-3.5 text-slate-400 pointer-events-none">
-                  <Mail className="size-4" />
-                </span>
-                <input
+          {/* Card */}
+          <motion.div
+            variants={fadeUp}
+            className="rounded-[22px] border border-black/[0.06] bg-white p-[32px] shadow-[0_24px_64px_rgba(11,59,56,0.10)] sm:p-[36px]"
+          >
+            <h2 className="font-display text-[26px] font-bold tracking-[-0.6px] text-[#0b1f1e]">
+              Welcome back
+            </h2>
+            <p className="mt-[6px] text-[14px] leading-[1.5] text-[#5f706e]">
+              Sign in to your account to continue
+            </p>
+
+            <form onSubmit={handleSubmit} className="mt-[28px] flex flex-col gap-[18px]">
+              {/* Email */}
+              <div className="flex flex-col gap-[6px]">
+                <Label htmlFor="email">Email address</Label>
+                <Input
                   id="email"
                   name="email"
                   type="email"
                   required
-                  placeholder="name@company.com"
-                  className="h-10.5 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all hover:border-slate-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  placeholder="john@university.edu"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
                 />
               </div>
-            </div>
 
-            {/* Password */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-xs font-semibold text-slate-800">
-                  Password
-                </label>
-                <Link href="/auth/recover" className="text-xs font-semibold text-teal-600 hover:text-teal-700 transition-colors">
-                  Forgot password?
-                </Link>
-              </div>
-              <div className="relative flex items-center">
-                <span className="absolute left-3.5 text-slate-400 pointer-events-none">
-                  <Lock className="size-4" />
-                </span>
-                <input
+              {/* Password */}
+              <div className="flex flex-col gap-[6px]">
+                <Label htmlFor="password">Password</Label>
+                <Input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type="password"
                   required
-                  placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
-                  className="h-10.5 w-full rounded-xl border border-slate-300 bg-white pl-10 pr-10 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all hover:border-slate-400 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 p-1 text-slate-400 hover:text-slate-600 transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
               </div>
-            </div>
 
-            {/* Error message */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 font-medium"
-              >
-                <AlertCircle className="size-4 shrink-0 text-red-600" />
-                <span>{error}</span>
-              </motion.div>
-            )}
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={isPending}
-              className="h-11 w-full mt-2 flex items-center justify-center gap-2 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-[0.99] text-white text-sm font-semibold shadow-sm transition-all disabled:opacity-60 disabled:pointer-events-none cursor-pointer"
-            >
-              {isPending ? (
-                <>
-                  <span className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                  <span>Signing inâ€¦</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In</span>
-                  <ArrowRight className="size-4" />
-                </>
+              {/* Error */}
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: EASE }}
+                  className="rounded-lg bg-destructive/[0.06] px-[12px] py-[10px] text-[13px] font-medium text-destructive"
+                >
+                  {error}
+                </motion.p>
               )}
-            </button>
-          </form>
 
-          {/* Footer Security Tag */}
-          <div className="mt-8 pt-6 border-t border-slate-200 text-center text-xs text-slate-500 font-medium">
-            <span className="inline-flex items-center gap-1.5">
-              <ShieldCheck className="size-3.5 text-teal-600" />
-              256-bit SSL Encrypted & SOC 2 Certified
-            </span>
-          </div>
+              {/* Submit */}
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="mt-[4px] h-[48px] w-full rounded-full bg-[#0b3b38] text-[15px] font-semibold tracking-[-0.1px] text-white shadow-[0_10px_28px_rgba(11,59,56,0.22)] transition-all duration-300 hover:-translate-y-[1px] hover:bg-[#0e4a47] hover:shadow-[0_16px_36px_rgba(11,59,56,0.28)] active:scale-[0.99]"
+              >
+                {isPending ? 'Signing in…' : 'Sign in'}
+              </Button>
+            </form>
+          </motion.div>
         </motion.div>
       </div>
     </div>
