@@ -94,7 +94,7 @@ function NavItem({ entry, active, badge, onClick }: NavItemProps) {
   return (
     <button
       onClick={onClick}
-      className={`relative flex w-full items-center justify-between rounded-[8px] px-[10px] py-[8px] text-[13px] font-medium transition-colors duration-200 cursor-pointer ${
+      className={`dash-nav-item relative flex w-full items-center justify-between rounded-[8px] px-[10px] py-[3px] text-[13px] font-medium transition-colors duration-200 cursor-pointer ${
         active ? "text-slate-900 font-bold" : "text-[#71717a] hover:bg-slate-50 hover:text-slate-900"
       }`}
     >
@@ -205,7 +205,7 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
 
   const content = (
     <div className="flex h-full w-[252px] flex-col border-r border-black/[0.06] bg-white">
-      <div className="flex items-center justify-between px-[16px] pt-[16px] pb-[12px]">
+      <div className="flex items-center justify-between px-[16px] pt-[12px] pb-[10px]">
         <Link href="/" className="flex items-center gap-[8px]">
           <Logo className="h-[20px] w-auto" />
           <span className="text-[15px] font-semibold tracking-[-0.2px] text-black">Carbonsynq</span>
@@ -216,7 +216,7 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
       </div>
 
       <div className="px-[12px]">
-        <div className="flex items-center gap-[8px] rounded-[8px] border border-black/[0.06] bg-[#fafafa] px-[10px] py-[8px]">
+        <div className="flex items-center gap-[8px] rounded-[8px] border border-black/[0.06] bg-[#fafafa] px-[10px] py-[6px]">
           <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-[6px] bg-slate-800 text-[10px] font-bold text-white">
             {orgName.slice(0, 1)}
           </span>
@@ -226,11 +226,11 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
         </div>
       </div>
 
-      <nav className="custom-scrollbar mt-[14px] flex flex-1 flex-col gap-[18px] overflow-y-auto px-[12px]">
+      <nav className="custom-scrollbar mt-[10px] flex min-h-0 flex-1 flex-col gap-[8px] overflow-y-auto px-[12px]">
         {NAV_GROUPS.map((group) => {
           return (
             <div key={group.label}>
-              <p className="mb-[6px] px-[10px] text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[#a1a1aa]">
+              <p className="mb-[4px] px-[10px] text-[10px] font-semibold uppercase tracking-[0.1em] text-[#a1a1aa]">
                 {group.label}
               </p>
               <div className="flex flex-col gap-[2px]">
@@ -248,12 +248,12 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
           );
         })}
 
-        <div className="mt-[2px] rounded-[10px] border border-slate-200 bg-slate-50 p-[12px]">
+        <div className="sidebar-target-card mt-[2px] rounded-[10px] border border-slate-200 bg-slate-50 p-[10px]">
           <div className="flex items-center justify-between">
             <p className="text-[12px] font-semibold text-slate-700">2030 target</p>
             <span className="text-[10.5px] font-semibold text-teal-600">−42%</span>
           </div>
-          <div className="mt-[8px] h-[4px] w-full overflow-hidden rounded-full bg-slate-200">
+          <div className="mt-[6px] h-[4px] w-full overflow-hidden rounded-full bg-slate-200">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: "44%" }}
@@ -262,19 +262,19 @@ export default function Sidebar({ open, onClose, active, onChange }: SidebarProp
               style={{ background: "linear-gradient(90deg, #0f766e, #06b6d4)" }}
             />
           </div>
-          <p className="mt-[8px] text-[11px] leading-snug text-slate-500">−18.6% of −42% target met</p>
+          <p className="mt-[6px] text-[11px] leading-snug text-slate-500">−18.6% of −42% target met</p>
         </div>
       </nav>
 
-      <div className="border-t border-black/[0.06] p-[12px]">
+      <div className="border-t border-black/[0.06] p-[10px]">
         <Link
           href="/"
-          className="mb-[8px] flex items-center justify-between rounded-[8px] px-[10px] py-[8px] text-[13px] font-medium text-[#71717a] transition-colors hover:bg-black/[0.03] hover:text-black"
+          className="sidebar-live-link mb-[6px] items-center justify-between rounded-[8px] px-[10px] py-[6px] text-[13px] font-medium text-[#71717a] transition-colors hover:bg-black/[0.03] hover:text-black"
         >
           View live site
           <ArrowUpRight size={14} className="text-[#a1a1aa]" />
         </Link>
-        <div className="flex items-center gap-[10px] rounded-[8px] px-[10px] py-[8px]">
+        <div className="flex items-center gap-[10px] rounded-[8px] px-[10px] py-[6px]">
           <span className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-slate-800 text-[11px] font-semibold text-white uppercase">
             {user?.firstName?.slice(0, 1) || "U"}
             {user?.lastName?.slice(0, 1) || ""}

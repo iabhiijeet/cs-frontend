@@ -111,6 +111,24 @@ html {
   border-radius: 9999px;
 }
 
+/* ── Dashboard sidebar: keep the whole nav inside the window ─────
+   The sidebar never scrolls on its own. On shorter viewports the
+   promo card and the secondary link give up their space first, and
+   the nav rows tighten up, so all entries stay visible. These rules
+   are intentionally unlayered so they win over Tailwind utilities. */
+.sidebar-target-card { display: none; }
+.sidebar-live-link { display: flex; }
+
+@media (min-height: 960px) {
+  .sidebar-target-card { display: block; }
+}
+@media (max-height: 799px) {
+  .sidebar-live-link { display: none; }
+}
+@media (max-height: 720px) {
+  .dash-nav-item { padding-top: 1px; padding-bottom: 1px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -105,7 +105,7 @@ function DashboardContent() {
   }
 
   return (
-    <div className="flex min-h-dvh bg-slate-50 relative overflow-hidden">
+    <div className="flex min-h-dvh bg-slate-50 relative">
       {/* ── Premium Atmospheric Background ── */}
       <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute -left-[10%] -top-[10%] h-[50%] w-[50%] rounded-full bg-teal-400/10 blur-[120px]" />
